@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env.local
+
+# Keep .env (demo defaults) and .env.example tracked

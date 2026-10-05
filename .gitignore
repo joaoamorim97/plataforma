@@ -1,0 +1,28 @@
+# Tooling baixado localmente
+.tools/
+
+# Dependências e builds
+node_modules/
+dist/
+dist-ssr/
+target/
+*.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# Variáveis de ambiente com segredos
+.env
+.env.local
+.env.*.local
+
+# App de referência (não faz parte do deploy)
+Plataforma _V012/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.log
