@@ -1,1 +1,5 @@
+# Proxy da API para o backend no Render (precisa vir antes do fallback de SPA)
+/api/*  https://perto-backend-7i7a.onrender.com/api/:splat  200!
+
+# SPA fallback
 /*    /index.html   200

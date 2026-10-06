@@ -6,19 +6,15 @@
   NODE_VERSION = "20"
 
 # ---------------------------------------------------------------------
-# Proxy das chamadas de API para o backend Spring Boot.
-# Troque a URL abaixo pela URL pública do seu backend (Render/Railway/etc).
-# Assim o frontend continua chamando "/api/..." e o Netlify repassa,
-# evitando problemas de CORS e sem precisar rebuildar quando a URL mudar.
-#
-# Enquanto o backend não estiver publicado, deixe comentado (o app roda
-# em modo demo e as chamadas /api só funcionam rodando localmente).
+# Proxy das chamadas de API para o backend Spring Boot no Render.
+# O frontend chama "/api/..." e o Netlify repassa para o backend,
+# evitando problemas de CORS. Precisa vir ANTES do fallback de SPA.
 # ---------------------------------------------------------------------
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://SEU-BACKEND.onrender.com/api/:splat"
-#   status = 200
-#   force = true
+[[redirects]]
+  from = "/api/*"
+  to = "https://perto-backend-7i7a.onrender.com/api/:splat"
+  status = 200
+  force = true
 
 # SPA fallback: todas as rotas servem index.html (client-side routing).
 [[redirects]]
