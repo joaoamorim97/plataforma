@@ -1,23 +1,26 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Store, Scissors, Image, Clock, Star, ArrowLeft, Eye, MapPin, CalendarDays, CalendarClock, Users, Boxes } from 'lucide-react';
 import { useMyBusiness } from '@/hooks/useMyBusiness';
-
-const items = [
-  { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard, end: true },
-  { to: '/dashboard/agenda', label: 'Agenda', icon: CalendarDays },
-  { to: '/dashboard/provider-agenda', label: 'Agenda Profissional', icon: CalendarClock },
-  { to: '/dashboard/team', label: 'Equipe e Recursos', icon: Users },
-  { to: '/dashboard/inventory', label: 'Estoque', icon: Boxes },
-  { to: '/dashboard/business', label: 'Meu negócio', icon: Store },
-  { to: '/dashboard/services', label: 'Serviços', icon: Scissors },
-  { to: '/dashboard/photos', label: 'Fotos', icon: Image },
-  { to: '/dashboard/hours', label: 'Horários', icon: Clock },
-  { to: '/dashboard/reviews', label: 'Avaliações', icon: Star },
-];
+import { useI18n } from '@/i18n/I18nContext';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export function DashboardLayout() {
   const { business } = useMyBusiness();
+  const { t } = useI18n();
   const navigate = useNavigate();
+
+  const items = [
+    { to: '/dashboard', label: t('dash.overview'), icon: LayoutDashboard, end: true },
+    { to: '/dashboard/agenda', label: t('dash.agenda'), icon: CalendarDays },
+    { to: '/dashboard/provider-agenda', label: t('dash.providerAgenda'), icon: CalendarClock },
+    { to: '/dashboard/team', label: t('dash.team'), icon: Users },
+    { to: '/dashboard/inventory', label: t('dash.inventory'), icon: Boxes },
+    { to: '/dashboard/business', label: t('dash.myBusiness'), icon: Store },
+    { to: '/dashboard/services', label: t('dash.services'), icon: Scissors },
+    { to: '/dashboard/photos', label: t('dash.photos'), icon: Image },
+    { to: '/dashboard/hours', label: t('dash.hours'), icon: Clock },
+    { to: '/dashboard/reviews', label: t('dash.reviews'), icon: Star },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -30,16 +33,17 @@ export function DashboardLayout() {
               </span>
               <span className="hidden text-lg font-extrabold text-slate-800 sm:block">Perto</span>
             </Link>
-            <span className="hidden text-sm text-slate-400 sm:block">· Painel</span>
+            <span className="hidden text-sm text-slate-400 sm:block">· {t('dash.panel')}</span>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {business && (
               <button onClick={() => navigate(`/business/${business.id}`)} className="btn-secondary">
-                <Eye className="h-4 w-4" /> <span className="hidden sm:inline">Ver página pública</span>
+                <Eye className="h-4 w-4" /> <span className="hidden sm:inline">{t('dash.viewPublic')}</span>
               </button>
             )}
             <Link to="/explore" className="btn-ghost">
-              <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Sair do painel</span>
+              <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">{t('dash.exitPanel')}</span>
             </Link>
           </div>
         </div>

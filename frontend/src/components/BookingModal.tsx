@@ -6,6 +6,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Feedback';
 import { formatPrice } from '@/lib/format';
+import { useI18n } from '@/i18n/I18nContext';
 import type { BusinessDetail, Provider, Slot } from '@/types';
 
 function todayStr(): string {
@@ -23,6 +24,7 @@ interface Props {
 export function BookingModal({ business, onClose, onBooked }: Props) {
   const { isAuthenticated, profile } = useAuth();
   const toast = useToast();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -67,7 +69,7 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
       return;
     }
     if (!time) {
-      toast.info('Escolha um horário disponível.');
+      toast.info(t('book.chooseSlot'));
       return;
     }
     setSaving(true);
@@ -80,7 +82,7 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
         clientName: clientName || null,
         clientPhone: clientPhone || null,
       });
-      toast.success('Horário agendado! Veja em "Meus agendamentos".');
+      toast.success(t('book.success'));
       onBooked();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Não foi possível agendar.');
@@ -94,18 +96,18 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
       <div onClick={(e) => e.stopPropagation()} className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 sm:rounded-2xl animate-fade-in">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
-            <CalendarPlus className="h-5 w-5 text-brand-600" /> Agendar horário
+            <CalendarPlus className="h-5 w-5 text-brand-600" /> {t('book.title')}
           </h2>
           <button onClick={onClose} className="btn-ghost p-2"><X className="h-5 w-5" /></button>
         </div>
 
         <p className="mb-4 text-sm text-slate-500">
-          Em <span className="font-semibold text-slate-700">{business.name}</span>
+          {t('book.at')} <span className="font-semibold text-slate-700">{business.name}</span>
         </p>
 
         {business.services.length > 0 && (
           <div className="mb-4">
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Serviço</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('common.service')}</label>
             <select value={serviceId ?? ''} onChange={(e) => setServiceId(e.target.value ? Number(e.target.value) : undefined)} className="input">
               {business.services.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -118,9 +120,9 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
 
         {providers.length > 0 && (
           <div className="mb-4">
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Profissional (opcional)</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('common.professional')} {t('common.optional')}</label>
             <select value={providerId ?? ''} onChange={(e) => setProviderId(e.target.value ? Number(e.target.value) : undefined)} className="input">
-              <option value="">Sem preferência</option>
+              <option value="">{t('book.noPreference')}</option>
               {providers.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}{p.role ? ` · ${p.role}` : ''}</option>
               ))}
@@ -129,16 +131,16 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
         )}
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">Data</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('common.date')}</label>
           <input type="date" value={date} min={todayStr()} onChange={(e) => setDate(e.target.value)} className="input py-2" />
         </div>
 
         <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">Horário</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('common.time')}</label>
           {loadingSlots ? (
             <div className="flex justify-center py-6"><Spinner className="h-6 w-6 text-brand-500" /></div>
           ) : slots.length === 0 ? (
-            <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">Nenhum horário disponível neste dia.</p>
+            <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">{t('book.noSlots')}</p>
           ) : (
             <div className="grid grid-cols-4 gap-2">
               {slots.map((s) => (
@@ -164,11 +166,11 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
 
         <div className="mb-3 grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Seu nome</label>
-            <input value={clientName} onChange={(e) => setClientName(e.target.value)} className="input" placeholder="Seu nome" />
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('book.yourName')}</label>
+            <input value={clientName} onChange={(e) => setClientName(e.target.value)} className="input" placeholder={t('book.yourName')} />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Telefone</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('common.phone')}</label>
             <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="input" placeholder="(11) 9...." />
           </div>
         </div>
@@ -182,7 +184,7 @@ export function BookingModal({ business, onClose, onBooked }: Props) {
 
         <button onClick={submit} disabled={saving || !time} className="btn-primary w-full">
           {saving ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-          {isAuthenticated ? 'Confirmar agendamento' : 'Entrar para agendar'}
+          {isAuthenticated ? t('book.confirm') : t('book.loginToBook')}
         </button>
       </div>
     </div>

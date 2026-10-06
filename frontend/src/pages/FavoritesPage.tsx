@@ -5,8 +5,10 @@ import { favoriteApi } from '@/lib/services';
 import { useFavorites } from '@/hooks/useFavorites';
 import { BusinessCard } from '@/components/BusinessCard';
 import { CardSkeleton, EmptyState } from '@/components/ui/Feedback';
+import { useI18n } from '@/i18n/I18nContext';
 
 export function FavoritesPage() {
+  const { t } = useI18n();
   const { isFavorite, toggle } = useFavorites();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['favorites'],
@@ -21,8 +23,8 @@ export function FavoritesPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-800">Favoritos</h1>
-        <p className="text-sm text-slate-500">Os negócios que você salvou</p>
+        <h1 className="text-xl font-bold text-slate-800">{t('fav.title')}</h1>
+        <p className="text-sm text-slate-500">{t('fav.subtitle')}</p>
       </div>
 
       {isLoading ? (
@@ -34,11 +36,11 @@ export function FavoritesPage() {
       ) : !data || data.length === 0 ? (
         <EmptyState
           icon={Heart}
-          title="Nenhum favorito ainda"
-          description="Toque no coração dos negócios que você gostar para encontrá-los aqui."
+          title={t('fav.emptyTitle')}
+          description={t('fav.emptyDesc')}
           action={
             <Link to="/explore" className="btn-primary">
-              Explorar negócios
+              {t('bookings.explore')}
             </Link>
           }
         />

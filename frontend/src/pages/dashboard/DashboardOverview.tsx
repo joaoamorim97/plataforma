@@ -8,11 +8,12 @@ import { useMyBusiness } from '@/hooks/useMyBusiness';
 import { dashboardApi } from '@/lib/services';
 import { FullSpinner } from '@/components/ui/Feedback';
 import { NoBusiness } from './NoBusiness';
-import { CATEGORY_LABELS } from '@/types';
+import { useI18n } from '@/i18n/I18nContext';
 import { formatPrice } from '@/lib/format';
 
 export function DashboardOverview() {
   const { business, isLoading } = useMyBusiness();
+  const { t } = useI18n();
 
   const { data: stats } = useQuery({
     queryKey: ['dashboard-stats', business?.id],
@@ -20,18 +21,18 @@ export function DashboardOverview() {
     enabled: Boolean(business),
   });
 
-  if (isLoading) return <FullSpinner label="Carregando painel..." />;
+  if (isLoading) return <FullSpinner label={t('common.loading')} />;
   if (!business) return <NoBusiness />;
 
   const kpis = [
-    { label: 'Receita estimada', value: formatPrice(stats?.estimatedRevenue ?? 0), icon: DollarSign, to: '/dashboard/agenda', accent: 'text-emerald-600' },
-    { label: 'Agendamentos', value: stats?.totalAppointments ?? 0, icon: CalendarDays, to: '/dashboard/agenda', accent: 'text-brand-600' },
-    { label: 'Próximos', value: stats?.upcomingAppointments ?? 0, icon: CalendarClock, to: '/dashboard/agenda', accent: 'text-brand-600' },
-    { label: 'Profissionais', value: stats?.providers ?? 0, icon: Users, to: '/dashboard/team', accent: 'text-slate-800' },
-    { label: 'Recursos', value: stats?.resources ?? 0, icon: Armchair, to: '/dashboard/team', accent: 'text-slate-800' },
-    { label: 'Catálogo', value: stats?.catalogServices ?? business.services.length, icon: Scissors, to: '/dashboard/services', accent: 'text-slate-800' },
-    { label: 'Itens em estoque', value: stats?.inventoryItems ?? 0, icon: Boxes, to: '/dashboard/inventory', accent: 'text-blue-600' },
-    { label: 'Avaliação', value: (stats?.rating ?? business.rating).toFixed(1), icon: Star, to: '/dashboard/reviews', accent: 'text-amber-500' },
+    { label: t('dash.revenue'), value: formatPrice(stats?.estimatedRevenue ?? 0), icon: DollarSign, to: '/dashboard/agenda', accent: 'text-emerald-600' },
+    { label: t('dash.appointments'), value: stats?.totalAppointments ?? 0, icon: CalendarDays, to: '/dashboard/agenda', accent: 'text-brand-600' },
+    { label: t('dash.upcoming'), value: stats?.upcomingAppointments ?? 0, icon: CalendarClock, to: '/dashboard/agenda', accent: 'text-brand-600' },
+    { label: t('dash.providers'), value: stats?.providers ?? 0, icon: Users, to: '/dashboard/team', accent: 'text-slate-800' },
+    { label: t('dash.resources'), value: stats?.resources ?? 0, icon: Armchair, to: '/dashboard/team', accent: 'text-slate-800' },
+    { label: t('dash.catalog'), value: stats?.catalogServices ?? business.services.length, icon: Scissors, to: '/dashboard/services', accent: 'text-slate-800' },
+    { label: t('dash.inventoryItems'), value: stats?.inventoryItems ?? 0, icon: Boxes, to: '/dashboard/inventory', accent: 'text-blue-600' },
+    { label: t('dash.rating'), value: (stats?.rating ?? business.rating).toFixed(1), icon: Star, to: '/dashboard/reviews', accent: 'text-amber-500' },
   ];
 
   const lowStock = stats?.lowStockItems ?? 0;
@@ -42,18 +43,18 @@ export function DashboardOverview() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">{business.name}</h1>
           <p className="text-sm text-slate-500">
-            {CATEGORY_LABELS[business.category]} · {business.active ? 'Ativo' : 'Inativo'}
+            {t(business.category === 'BARBER' ? 'cat.barbers' : 'cat.hairdressers')} · {business.active ? t('dash.active') : t('dash.inactive')}
           </p>
         </div>
         <Link to={`/business/${business.id}`} className="btn-secondary">
-          <Eye className="h-4 w-4" /> Ver página pública
+          <Eye className="h-4 w-4" /> {t('dash.viewPublic')}
         </Link>
       </div>
 
       {lowStock > 0 && (
         <Link to="/dashboard/inventory" className="flex items-center gap-3 rounded-2xl bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 transition hover:bg-rose-100">
           <AlertTriangle className="h-5 w-5 shrink-0" />
-          {lowStock} {lowStock === 1 ? 'item está' : 'itens estão'} com estoque baixo. Toque para repor.
+          {lowStock} {lowStock === 1 ? t('dash.lowStockItem') : t('dash.lowStockItems2')} {t('dash.lowStockAlert')}
         </Link>
       )}
 
@@ -68,14 +69,14 @@ export function DashboardOverview() {
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <QuickLink to="/dashboard/agenda" icon={CalendarDays} title="Agenda" desc="Agendar e ver a grade do dia" />
-        <QuickLink to="/dashboard/provider-agenda" icon={CalendarClock} title="Agenda profissional" desc="Compromissos por profissional" />
-        <QuickLink to="/dashboard/team" icon={Users} title="Equipe e recursos" desc="Profissionais e recursos" />
-        <QuickLink to="/dashboard/inventory" icon={Boxes} title="Estoque" desc="Insumos e revenda" />
-        <QuickLink to="/dashboard/services" icon={Scissors} title="Serviços" desc="Preços e durações" />
-        <QuickLink to="/dashboard/photos" icon={Image} title="Fotos" desc="Capa e galeria" />
-        <QuickLink to="/dashboard/hours" icon={Clock} title="Horários" desc="Dias e horários de funcionamento" />
-        <QuickLink to="/dashboard/business" icon={Eye} title="Dados do negócio" desc="Endereço, contato, localização" />
+        <QuickLink to="/dashboard/agenda" icon={CalendarDays} title={t('dash.agenda')} desc={t('dash.ql.agendaDesc')} />
+        <QuickLink to="/dashboard/provider-agenda" icon={CalendarClock} title={t('dash.providerAgenda')} desc={t('dash.ql.providerAgendaDesc')} />
+        <QuickLink to="/dashboard/team" icon={Users} title={t('dash.team')} desc={t('dash.ql.teamDesc')} />
+        <QuickLink to="/dashboard/inventory" icon={Boxes} title={t('dash.inventory')} desc={t('dash.ql.inventoryDesc')} />
+        <QuickLink to="/dashboard/services" icon={Scissors} title={t('dash.services')} desc={t('dash.ql.servicesDesc')} />
+        <QuickLink to="/dashboard/photos" icon={Image} title={t('dash.photos')} desc={t('dash.ql.photosDesc')} />
+        <QuickLink to="/dashboard/hours" icon={Clock} title={t('dash.hours')} desc={t('dash.ql.hoursDesc')} />
+        <QuickLink to="/dashboard/business" icon={Eye} title={t('dash.myBusiness')} desc={t('dash.ql.businessDesc')} />
       </section>
     </div>
   );

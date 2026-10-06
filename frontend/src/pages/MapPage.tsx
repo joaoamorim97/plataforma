@@ -8,9 +8,11 @@ import { MapView } from '@/components/MapView';
 import { FiltersBar, DEFAULT_FILTERS, type Filters } from '@/components/FiltersBar';
 import { EmptyState, CardSkeleton } from '@/components/ui/Feedback';
 import { MapListItem } from '@/components/MapListItem';
+import { useI18n } from '@/i18n/I18nContext';
 
 export function MapPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { coords, request } = useGeolocation();
   const { isFavorite, toggle } = useFavorites();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -22,13 +24,13 @@ export function MapPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Explorar no mapa</h1>
-          <p className="text-sm text-slate-500">Cabeleireiros e barbearias perto de você</p>
+          <h1 className="text-xl font-bold text-slate-800">{t('map.title')}</h1>
+          <p className="text-sm text-slate-500">{t('map.subtitle')}</p>
         </div>
         {!coords && (
           <button onClick={() => request().catch(() => {})} className="btn-secondary">
             <Navigation className="h-4 w-4" />
-            <span className="hidden sm:inline">Minha localização</span>
+            <span className="hidden sm:inline">{t('map.myLocation')}</span>
           </button>
         )}
       </div>
@@ -50,7 +52,7 @@ export function MapPage() {
 
         <div className="space-y-3 lg:max-h-[72vh] lg:overflow-y-auto lg:pr-1">
           <h2 className="text-sm font-semibold text-slate-700">
-            {isLoading ? 'Carregando...' : `${businesses.length} resultados`}
+            {isLoading ? t('common.loading') : `${businesses.length} ${t('map.results')}`}
           </h2>
           {isLoading ? (
             <>
@@ -58,7 +60,7 @@ export function MapPage() {
               <CardSkeleton />
             </>
           ) : businesses.length === 0 ? (
-            <EmptyState icon={Store} title="Nada por aqui" description="Ajuste os filtros para ver mais negócios." />
+            <EmptyState icon={Store} title={t('map.emptyTitle')} description={t('map.emptyDesc')} />
           ) : (
             businesses.map((b) => (
               <MapListItem

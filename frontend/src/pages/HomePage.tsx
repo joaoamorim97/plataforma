@@ -8,26 +8,28 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { BusinessCard } from '@/components/BusinessCard';
 import { CardSkeleton } from '@/components/ui/Feedback';
 import { useToast } from '@/components/ui/Toast';
+import { useI18n } from '@/i18n/I18nContext';
 import type { BusinessCategory } from '@/types';
-
-const categories: { key: BusinessCategory; label: string; emoji: string }[] = [
-  { key: 'HAIRDRESSER', label: 'Cabeleireiros', emoji: '💇' },
-  { key: 'BARBER', label: 'Barbearias', emoji: '💈' },
-];
-
-const futureCategories = [
-  { label: 'Pubs', emoji: '🍻' },
-  { label: 'Restaurantes', emoji: '🍽️' },
-  { label: 'Academias', emoji: '💪' },
-  { label: 'Clínicas', emoji: '🏥' },
-];
 
 export function HomePage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useI18n();
   const { coords, request, loading: geoLoading } = useGeolocation();
   const { isFavorite, toggle } = useFavorites();
   const [search, setSearch] = useState('');
+
+  const categories: { key: BusinessCategory; label: string; emoji: string }[] = [
+    { key: 'HAIRDRESSER', label: t('cat.hairdressers'), emoji: '💇' },
+    { key: 'BARBER', label: t('cat.barbers'), emoji: '💈' },
+  ];
+
+  const futureCategories = [
+    { label: t('cat.pubs'), emoji: '🍻' },
+    { label: t('cat.restaurants'), emoji: '🍽️' },
+    { label: t('cat.gyms'), emoji: '💪' },
+    { label: t('cat.clinics'), emoji: '🏥' },
+  ];
 
   const { data: businesses, isLoading } = useQuery({
     queryKey: ['home-businesses', coords],
@@ -61,13 +63,13 @@ export function HomePage() {
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-800 px-6 py-12 text-white sm:px-12 sm:py-16">
         <div className="relative z-10 max-w-2xl">
           <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5" /> Negócios locais perto de você
+            <Sparkles className="h-3.5 w-3.5" /> {t('home.badge')}
           </span>
           <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">
-            Encontre lugares incríveis perto de você.
+            {t('home.headline')}
           </h1>
           <p className="mt-4 text-base text-brand-100 sm:text-lg">
-            Descubra cabeleireiros e barbearias próximos, veja serviços, preços e horários, e entre em contato em segundos.
+            {t('home.subtitle')}
           </p>
 
           <form onSubmit={onSearch} className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -76,7 +78,7 @@ export function HomePage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Pesquisar negócio..."
+                placeholder={t('home.searchPlaceholder')}
                 className="h-13 w-full rounded-2xl border-0 bg-white py-3.5 pl-12 pr-4 text-slate-800 outline-none placeholder:text-slate-400"
               />
             </div>
@@ -87,7 +89,7 @@ export function HomePage() {
               className="btn inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-white py-3.5 font-semibold text-brand-700 hover:bg-brand-50"
             >
               <Navigation className="h-4 w-4" />
-              {geoLoading ? 'Localizando...' : 'Perto de mim'}
+              {geoLoading ? t('home.locating') : t('home.nearMe')}
             </button>
           </form>
         </div>
@@ -97,7 +99,7 @@ export function HomePage() {
 
       {/* Categories */}
       <section>
-        <h2 className="mb-4 text-lg font-bold text-slate-800">Categorias</h2>
+        <h2 className="mb-4 text-lg font-bold text-slate-800">{t('home.categories')}</h2>
         <div className="flex flex-wrap gap-3">
           {categories.map((c) => (
             <button
@@ -117,7 +119,7 @@ export function HomePage() {
               <span className="text-2xl opacity-50">{c.emoji}</span>
               <div>
                 <span className="block font-semibold text-slate-400">{c.label}</span>
-                <span className="text-[11px] text-slate-400">Em breve</span>
+                <span className="text-[11px] text-slate-400">{t('home.comingSoon')}</span>
               </div>
             </div>
           ))}
@@ -127,9 +129,9 @@ export function HomePage() {
       {/* Featured */}
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">Destaques perto de você</h2>
+          <h2 className="text-lg font-bold text-slate-800">{t('home.featured')}</h2>
           <button onClick={() => navigate('/explore')} className="text-sm font-semibold text-brand-600 hover:underline">
-            Ver todos
+            {t('action.seeAll')}
           </button>
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -144,7 +146,7 @@ export function HomePage() {
       {!coords && (
         <div className="flex items-center gap-3 rounded-2xl bg-brand-50 px-5 py-4 text-sm text-brand-800">
           <MapPin className="h-5 w-5 shrink-0" />
-          Ative sua localização para ver as distâncias e os negócios mais próximos de você.
+          {t('home.enableLocation')}
         </div>
       )}
     </div>

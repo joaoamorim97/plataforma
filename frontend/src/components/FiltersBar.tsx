@@ -1,4 +1,5 @@
 import { Scissors } from 'lucide-react';
+import { useI18n } from '@/i18n/I18nContext';
 import type { BusinessCategory } from '@/types';
 
 export interface Filters {
@@ -30,6 +31,7 @@ export function FiltersBar({
   onChange: (f: Filters) => void;
   hasLocation: boolean;
 }) {
+  const { t } = useI18n();
   const update = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
 
   const toggleService = (s: string) =>
@@ -42,22 +44,22 @@ export function FiltersBar({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <ChipGroup label="Categoria">
+        <ChipGroup label={t('filters.category')}>
           <Chip active={filters.category === null} onClick={() => update({ category: null })}>
-            Todos
+            {t('filters.all')}
           </Chip>
           <Chip active={filters.category === 'HAIRDRESSER'} onClick={() => update({ category: 'HAIRDRESSER' })}>
-            💇 Cabeleireiro
+            💇 {t('cat.hairdressers')}
           </Chip>
           <Chip active={filters.category === 'BARBER'} onClick={() => update({ category: 'BARBER' })}>
-            💈 Barbearia
+            💈 {t('cat.barbers')}
           </Chip>
         </ChipGroup>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {hasLocation && (
-          <ChipGroup label="Distância">
+          <ChipGroup label={t('filters.distance')}>
             {RADII.map((r) => (
               <Chip key={r} active={filters.radius === r} onClick={() => update({ radius: filters.radius === r ? null : r })}>
                 {r} km
@@ -66,7 +68,7 @@ export function FiltersBar({
           </ChipGroup>
         )}
 
-        <ChipGroup label="Avaliação">
+        <ChipGroup label={t('filters.rating')}>
           {RATINGS.map((r) => (
             <Chip key={r} active={filters.minRating === r} onClick={() => update({ minRating: filters.minRating === r ? null : r })}>
               {r}+
@@ -76,7 +78,7 @@ export function FiltersBar({
 
         <Chip active={filters.openNow} onClick={() => update({ openNow: !filters.openNow })}>
           <span className={`h-1.5 w-1.5 rounded-full ${filters.openNow ? 'bg-white' : 'bg-emerald-500'}`} />
-          Aberto agora
+          {t('filters.openNow')}
         </Chip>
       </div>
 

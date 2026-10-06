@@ -4,11 +4,13 @@ import { MapPin, Mail, Lock, User, ArrowLeft, Search, Store, Check } from 'lucid
 import { useAuth } from '@/auth/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Feedback';
+import { useI18n } from '@/i18n/I18nContext';
 import type { UserRole } from '@/types';
 
 export function RegisterPage() {
   const { signUp, usingDemoAuth } = useAuth();
   const toast = useToast();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -38,7 +40,7 @@ export function RegisterPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-brand-50 to-white px-4 py-8">
       <Link to="/" className="btn-ghost w-fit">
-        <ArrowLeft className="h-4 w-4" /> Voltar
+        <ArrowLeft className="h-4 w-4" /> {t('action.back')}
       </Link>
 
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-6">
@@ -46,8 +48,8 @@ export function RegisterPage() {
           <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white">
             <MapPin className="h-7 w-7" />
           </span>
-          <h1 className="text-2xl font-extrabold text-slate-900">Criar sua conta</h1>
-          <p className="mt-1 text-sm text-slate-500">Como você pretende utilizar a plataforma?</p>
+          <h1 className="text-2xl font-extrabold text-slate-900">{t('register.title')}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t('register.subtitle')}</p>
         </div>
 
         <div className="mb-5 grid grid-cols-2 gap-3">
@@ -55,28 +57,28 @@ export function RegisterPage() {
             active={role === 'CUSTOMER'}
             onClick={() => setRole('CUSTOMER')}
             icon={<Search className="h-5 w-5" />}
-            title="Quero encontrar negócios"
+            title={t('register.asCustomer')}
           />
           <RoleCard
             active={role === 'BUSINESS_OWNER'}
             onClick={() => setRole('BUSINESS_OWNER')}
             icon={<Store className="h-5 w-5" />}
-            title="Tenho um negócio"
+            title={t('register.asOwner')}
           />
         </div>
 
         <form onSubmit={submit} className="card space-y-4 p-6">
-          <Field icon={<User className="h-4 w-4" />} label="Nome">
+          <Field icon={<User className="h-4 w-4" />} label={t('common.name')}>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="input pl-10"
-              placeholder="Seu nome"
+              placeholder={t('common.name')}
             />
           </Field>
-          <Field icon={<Mail className="h-4 w-4" />} label="E-mail">
+          <Field icon={<Mail className="h-4 w-4" />} label={t('login.email')}>
             <input
               type="email"
               required
@@ -86,33 +88,33 @@ export function RegisterPage() {
               placeholder="voce@email.com"
             />
           </Field>
-          <Field icon={<Lock className="h-4 w-4" />} label="Senha">
+          <Field icon={<Lock className="h-4 w-4" />} label={t('login.password')}>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input pl-10"
-              placeholder="Mínimo 6 caracteres"
+              placeholder={t('register.passwordHint')}
             />
           </Field>
 
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading && <Spinner className="h-4 w-4" />}
-            Criar conta
+            {t('action.register')}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          Já tem conta?{' '}
+          {t('register.haveAccount')}{' '}
           <Link to="/login" className="font-semibold text-brand-600 hover:underline">
-            Entrar
+            {t('action.login')}
           </Link>
         </p>
 
         {usingDemoAuth && (
           <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
-            Modo demonstração: a conta é salva localmente no seu navegador. Configure o Supabase para contas reais.
+            {t('login.demoNotice')}
           </p>
         )}
       </div>

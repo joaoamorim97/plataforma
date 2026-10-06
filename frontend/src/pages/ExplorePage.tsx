@@ -8,11 +8,13 @@ import { BusinessCard } from '@/components/BusinessCard';
 import { CardSkeleton, EmptyState } from '@/components/ui/Feedback';
 import { FiltersBar, DEFAULT_FILTERS, type Filters } from '@/components/FiltersBar';
 import { MapView } from '@/components/MapView';
+import { useI18n } from '@/i18n/I18nContext';
 import type { BusinessCategory } from '@/types';
 
 export function ExplorePage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { coords, request } = useGeolocation();
   const { isFavorite, toggle } = useFavorites();
 
@@ -57,14 +59,14 @@ export function ExplorePage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar negócio..."
+            placeholder={t('explore.searchPlaceholder')}
             className="input py-3 pl-12"
           />
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowFilters((v) => !v)} className="btn-secondary relative">
             <SlidersHorizontal className="h-4 w-4" />
-            Filtros
+            {t('explore.filters')}
             {activeFilterCount > 0 && (
               <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[11px] text-white">
                 {activeFilterCount}
@@ -74,7 +76,7 @@ export function ExplorePage() {
           {!coords && (
             <button onClick={() => request().catch(() => {})} className="btn-secondary">
               <Navigation className="h-4 w-4" />
-              <span className="hidden sm:inline">Localização</span>
+              <span className="hidden sm:inline">{t('explore.location')}</span>
             </button>
           )}
           {/* View toggle */}
@@ -85,7 +87,7 @@ export function ExplorePage() {
                 view === 'list' ? 'bg-brand-600 text-white' : 'text-slate-500'
               }`}
             >
-              <List className="h-4 w-4" /> Lista
+              <List className="h-4 w-4" /> {t('explore.list')}
             </button>
             <button
               onClick={() => setView('map')}
@@ -93,7 +95,7 @@ export function ExplorePage() {
                 view === 'map' ? 'bg-brand-600 text-white' : 'text-slate-500'
               }`}
             >
-              <MapIcon className="h-4 w-4" /> Mapa
+              <MapIcon className="h-4 w-4" /> {t('explore.map')}
             </button>
           </div>
         </div>
@@ -106,7 +108,7 @@ export function ExplorePage() {
       )}
 
       <p className="text-sm text-slate-500">
-        {isLoading ? 'Buscando...' : `${businesses.length} negócio${businesses.length === 1 ? '' : 's'} encontrado${businesses.length === 1 ? '' : 's'}`}
+        {isLoading ? t('explore.searching') : `${businesses.length} ${t('explore.found')}`}
       </p>
 
       {view === 'map' ? (
@@ -122,8 +124,8 @@ export function ExplorePage() {
       ) : businesses.length === 0 ? (
         <EmptyState
           icon={Store}
-          title="Nenhum negócio encontrado"
-          description="Tente ajustar os filtros ou pesquisar por outro termo."
+          title={t('explore.emptyTitle')}
+          description={t('explore.emptyDesc')}
         />
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

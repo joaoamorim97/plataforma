@@ -6,13 +6,14 @@ import {
 } from 'lucide-react';
 import { businessApi, reviewApi, favoriteApi } from '@/lib/services';
 import { BookingModal } from '@/components/BookingModal';
+import { useI18n } from '@/i18n/I18nContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useAuth } from '@/auth/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { StarRating } from '@/components/ui/StarRating';
 import { FullSpinner } from '@/components/ui/Feedback';
 import { formatDistance, formatDuration, formatPrice } from '@/lib/format';
-import { CATEGORY_ICONS, CATEGORY_LABELS, DAY_LABELS } from '@/types';
+import { CATEGORY_ICONS } from '@/types';
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=1200&q=80';
 
@@ -24,6 +25,7 @@ export function BusinessPage() {
   const queryClient = useQueryClient();
   const { coords } = useGeolocation();
   const { isAuthenticated, userId } = useAuth();
+  const { t } = useI18n();
 
   const [favorite, setFavorite] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -50,9 +52,9 @@ export function BusinessPage() {
   if (!business) {
     return (
       <div className="py-20 text-center text-slate-500">
-        Negócio não encontrado.{' '}
+        {t('biz.notFound')}{' '}
         <Link to="/explore" className="font-semibold text-brand-600">
-          Voltar
+          {t('action.back')}
         </Link>
       </div>
     );
@@ -104,7 +106,7 @@ export function BusinessPage() {
     <div className="animate-fade-in space-y-6 pb-6">
       <div className="flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="btn-ghost">
-          <ArrowLeft className="h-4 w-4" /> Voltar
+          <ArrowLeft className="h-4 w-4" /> {t('action.back')}
         </button>
         <div className="flex gap-2">
           <button onClick={share} className="btn-secondary">
@@ -139,7 +141,7 @@ export function BusinessPage() {
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white sm:p-8">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur">
-              {CATEGORY_ICONS[business.category]} {CATEGORY_LABELS[business.category]}
+              {CATEGORY_ICONS[business.category]} {t(business.category === 'BARBER' ? 'cat.barbers' : 'cat.hairdressers')}
             </span>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
@@ -147,7 +149,7 @@ export function BusinessPage() {
               }`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
-              {business.openNow ? 'Aberto agora' : 'Fechado'}
+              {business.openNow ? t('common.openNow') : t('common.closed')}
             </span>
           </div>
           <h1 className="text-2xl font-extrabold sm:text-4xl">{business.name}</h1>
@@ -155,7 +157,7 @@ export function BusinessPage() {
             <span className="flex items-center gap-1.5">
               <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
               <span className="font-semibold">{business.rating.toFixed(1)}</span>
-              <span className="text-white/70">({business.totalReviews} avaliações)</span>
+              <span className="text-white/70">({business.totalReviews} {t('common.reviews')})</span>
             </span>
             <span className="flex items-center gap-1.5 text-white/90">
               <MapPin className="h-4 w-4" />
@@ -171,16 +173,16 @@ export function BusinessPage() {
           {/* About */}
           {business.description && (
             <section className="card p-5">
-              <h2 className="mb-2 text-lg font-bold text-slate-800">Sobre</h2>
+              <h2 className="mb-2 text-lg font-bold text-slate-800">{t('biz.about')}</h2>
               <p className="text-sm leading-relaxed text-slate-600">{business.description}</p>
             </section>
           )}
 
           {/* Services */}
           <section className="card p-5">
-            <h2 className="mb-4 text-lg font-bold text-slate-800">Serviços</h2>
+            <h2 className="mb-4 text-lg font-bold text-slate-800">{t('biz.services')}</h2>
             {business.services.length === 0 ? (
-              <p className="text-sm text-slate-400">Nenhum serviço cadastrado ainda.</p>
+              <p className="text-sm text-slate-400">{t('biz.noServices')}</p>
             ) : (
               <ul className="divide-y divide-slate-100">
                 {business.services.map((s) => (
@@ -200,7 +202,7 @@ export function BusinessPage() {
           {/* Gallery thumbnails */}
           {images.length > 1 && (
             <section className="card p-5">
-              <h2 className="mb-4 text-lg font-bold text-slate-800">Fotos</h2>
+              <h2 className="mb-4 text-lg font-bold text-slate-800">{t('biz.photos')}</h2>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {images.map((img, i) => (
                   <button key={img.id} onClick={() => setGalleryIndex(i)} className="overflow-hidden rounded-xl">
@@ -227,15 +229,15 @@ export function BusinessPage() {
         {/* Sidebar: booking + contact + hours */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <section className="card space-y-3 p-5">
-            <h2 className="text-lg font-bold text-slate-800">Agende seu horário</h2>
-            <p className="text-sm text-slate-500">Escolha o serviço, o profissional e o melhor horário.</p>
+            <h2 className="text-lg font-bold text-slate-800">{t('biz.bookTitle')}</h2>
+            <p className="text-sm text-slate-500">{t('biz.bookSubtitle')}</p>
             <button onClick={() => setShowBooking(true)} className="btn-primary w-full">
-              <CalendarPlus className="h-4 w-4" /> Agendar horário
+              <CalendarPlus className="h-4 w-4" /> {t('biz.book')}
             </button>
           </section>
 
           <section className="card space-y-2 p-5">
-            <h2 className="mb-2 text-lg font-bold text-slate-800">Contato</h2>
+            <h2 className="mb-2 text-lg font-bold text-slate-800">{t('biz.contact')}</h2>
             {whatsappUrl && (
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn w-full bg-emerald-500 text-white hover:bg-emerald-600">
                 <MessageCircle className="h-4 w-4" /> WhatsApp
@@ -247,7 +249,7 @@ export function BusinessPage() {
               </a>
             )}
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary w-full">
-              <Navigation className="h-4 w-4" /> Como chegar
+              <Navigation className="h-4 w-4" /> {t('biz.directions')}
             </a>
             {(business.address || business.city) && (
               <p className="flex items-start gap-2 pt-2 text-sm text-slate-500">
@@ -264,16 +266,16 @@ export function BusinessPage() {
 
           <section className="card p-5">
             <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-slate-800">
-              <Clock className="h-5 w-5" /> Horários
+              <Clock className="h-5 w-5" /> {t('biz.hours')}
             </h2>
             <ul className="space-y-1.5 text-sm">
               {[1, 2, 3, 4, 5, 6, 0].map((day) => {
                 const h = business.hours.find((x) => x.dayOfWeek === day);
                 return (
                   <li key={day} className="flex items-center justify-between">
-                    <span className="text-slate-600">{DAY_LABELS[day]}</span>
+                    <span className="text-slate-600">{t(`day.${day}`)}</span>
                     <span className={h?.open ? 'font-medium text-slate-800' : 'text-slate-400'}>
-                      {h?.open && h.openingTime && h.closingTime ? `${h.openingTime} - ${h.closingTime}` : 'Fechado'}
+                      {h?.open && h.openingTime && h.closingTime ? `${h.openingTime} - ${h.closingTime}` : t('common.closed')}
                     </span>
                   </li>
                 );
@@ -312,6 +314,7 @@ function ReviewsSection({
 }) {
   const toast = useToast();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const existing = reviews.find((r) => r.userId === currentUserId);
   const [rating, setRating] = useState(existing?.rating ?? 5);
   const [comment, setComment] = useState(existing?.comment ?? '');
@@ -336,27 +339,27 @@ function ReviewsSection({
 
   return (
     <section className="card p-5">
-      <h2 className="mb-4 text-lg font-bold text-slate-800">Avaliações</h2>
+      <h2 className="mb-4 text-lg font-bold text-slate-800">{t('biz.reviews')}</h2>
 
       <div className="mb-5 rounded-2xl bg-slate-50 p-4">
         <p className="mb-2 text-sm font-medium text-slate-700">
-          {existing ? 'Edite sua avaliação' : 'Deixe sua avaliação'}
+          {existing ? t('biz.editReview') : t('biz.leaveReview')}
         </p>
         <StarRating value={rating} size={26} onChange={setRating} />
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Conte como foi sua experiência..."
+          placeholder={t('biz.reviewPlaceholder')}
           rows={3}
           className="input mt-3 resize-none"
         />
         <button onClick={submit} disabled={saving} className="btn-primary mt-3">
-          {existing ? 'Atualizar avaliação' : 'Enviar avaliação'}
+          {existing ? t('biz.updateReview') : t('biz.sendReview')}
         </button>
       </div>
 
       {reviews.length === 0 ? (
-        <p className="text-sm text-slate-400">Seja o primeiro a avaliar este negócio.</p>
+        <p className="text-sm text-slate-400">{t('biz.firstReview')}</p>
       ) : (
         <ul className="space-y-4">
           {reviews.map((r) => (

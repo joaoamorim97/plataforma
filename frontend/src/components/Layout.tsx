@@ -1,18 +1,21 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Compass, Heart, Home, Map, MapPin, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
-
-const navItems = [
-  { to: '/', label: 'Home', icon: Home, end: true },
-  { to: '/explore', label: 'Explorar', icon: Compass },
-  { to: '/map', label: 'Mapa', icon: Map },
-  { to: '/favorites', label: 'Favoritos', icon: Heart },
-  { to: '/profile', label: 'Perfil', icon: User },
-];
+import { useI18n } from '@/i18n/I18nContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Layout() {
   const { isAuthenticated, profile, signOut } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
+
+  const navItems = [
+    { to: '/', label: t('nav.home'), icon: Home, end: true },
+    { to: '/explore', label: t('nav.explore'), icon: Compass },
+    { to: '/map', label: t('nav.map'), icon: Map },
+    { to: '/favorites', label: t('nav.favorites'), icon: Heart },
+    { to: '/profile', label: t('nav.profile'), icon: User },
+  ];
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,12 +52,13 @@ export function Layout() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {isAuthenticated ? (
               <>
                 {profile?.role === 'BUSINESS_OWNER' && (
                   <Link to="/dashboard" className="btn-secondary hidden sm:inline-flex">
                     <LayoutDashboard className="h-4 w-4" />
-                    Painel
+                    {t('nav.panel')}
                   </Link>
                 )}
                 <Link to="/profile" className="hidden items-center gap-2 sm:flex">
@@ -62,17 +66,17 @@ export function Layout() {
                     {(profile?.name || 'U').charAt(0).toUpperCase()}
                   </span>
                 </Link>
-                <button onClick={handleSignOut} className="btn-ghost hidden sm:inline-flex" aria-label="Sair">
+                <button onClick={handleSignOut} className="btn-ghost hidden sm:inline-flex" aria-label={t('action.logout')}>
                   <LogOut className="h-4 w-4" />
                 </button>
               </>
             ) : (
               <>
                 <Link to="/login" className="btn-ghost">
-                  Entrar
+                  {t('action.login')}
                 </Link>
                 <Link to="/register" className="btn-primary">
-                  Criar conta
+                  {t('action.register')}
                 </Link>
               </>
             )}

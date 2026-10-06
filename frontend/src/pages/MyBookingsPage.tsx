@@ -5,6 +5,7 @@ import { bookingApi } from '@/lib/services';
 import { useToast } from '@/components/ui/Toast';
 import { FullSpinner, EmptyState } from '@/components/ui/Feedback';
 import { formatPrice } from '@/lib/format';
+import { useI18n } from '@/i18n/I18nContext';
 import type { MyBooking } from '@/types';
 
 function formatDate(iso: string): string {
@@ -12,14 +13,21 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
-const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  BOOKED: { label: 'Confirmado', cls: 'bg-emerald-50 text-emerald-700' },
-  DONE: { label: 'Concluído', cls: 'bg-slate-100 text-slate-600' },
-  CANCELLED: { label: 'Cancelado', cls: 'bg-rose-50 text-rose-600' },
+const STATUS_CLS: Record<string, string> = {
+  BOOKED: 'bg-emerald-50 text-emerald-700',
+  DONE: 'bg-slate-100 text-slate-600',
+  CANCELLED: 'bg-rose-50 text-rose-600',
+};
+
+const STATUS_KEY: Record<string, string> = {
+  BOOKED: 'bookings.statusBooked',
+  DONE: 'bookings.statusDone',
+  CANCELLED: 'bookings.statusCancelled',
 };
 
 export function MyBookingsPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['my-bookings'],
     queryFn: () => bookingApi.myBookings(),
@@ -29,7 +37,7 @@ export function MyBookingsPage() {
     if (!confirm(`Cancelar o agendamento em ${b.businessName}?`)) return;
     try {
       await bookingApi.cancel(b.id);
-      toast.success('Agendamento cancelado.');
+      toast.success(t('bookings.statusCancelled'));
       refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao cancelar.');
@@ -42,8 +50,8 @@ export function MyBookingsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-800">Meus agendamentos</h1>
-        <p className="text-sm text-slate-500">Horários que você marcou nos negócios</p>
+        <h1 className="text-xl font-bold text-slate-800">{t('bookings.title')}</h1>
+        <p className="text-sm text-slate-500">{t('bookings.subtitle')}</p>
       </div>
 
       {isLoading ? (
@@ -51,11 +59,11 @@ export function MyBookingsPage() {
       ) : !data || data.length === 0 ? (
         <EmptyState
           icon={CalendarCheck}
-          title="Nenhum agendamento ainda"
-          description="Encontre um negócio e marque seu horário."
+          title={t('bookings.emptyTitle')}
+          description={t('bookings.emptyDesc')}
           action={
             <Link to="/explore" className="btn-primary">
-              Explorar negócios
+              {t('bookings.explore')}
             </Link>
           }
         />
@@ -66,7 +74,7 @@ export function MyBookingsPage() {
           ))}
           {cancelled.length > 0 && (
             <>
-              <h2 className="pt-4 text-sm font-semibold text-slate-400">Cancelados</h2>
+              <h2 className="pt-4 text-sm font-semibold text-slate-400">{t('bookings.cancelled')}</h2>
               {cancelled.map((b) => (
                 <BookingCard key={b.id} booking={b} />
               ))}
@@ -79,7 +87,9 @@ export function MyBookingsPage() {
 }
 
 function BookingCard({ booking, onCancel }: { booking: MyBooking; onCancel?: () => void }) {
-  const status = STATUS_LABEL[booking.status] ?? STATUS_LABEL.BOOKED;
+  const { t } = useI18n();
+  const statusCls = STATUS_CLS[booking.status] ?? STATUS_CLS.BOOKED;
+  const statusLabel = t(STATUS_KEY[booking.status] ?? 'bookings.statusBooked');
   const whatsapp = booking.businessWhatsapp
     ? `https://wa.me/${booking.businessWhatsapp.replace(/\D/g, '')}`
     : null;
@@ -99,11 +109,11 @@ function BookingCard({ booking, onCancel }: { booking: MyBooking; onCancel?: () 
             {booking.servicePrice != null && <span className="font-medium text-slate-700">{formatPrice(booking.servicePrice)}</span>}
           </div>
           {booking.providerName && (
-            <p className="mt-1 text-xs text-slate-400">com {booking.providerName}</p>
+            <p className="mt-1 text-xs text-slate-400">{t('bookings.with')} {booking.providerName}</p>
           )}
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${status.cls}`}>
-          {status.label}
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusCls}`}>
+          {statusLabel}
         </span>
       </div>
 
@@ -115,11 +125,11 @@ function BookingCard({ booking, onCancel }: { booking: MyBooking; onCancel?: () 
             </a>
           )}
           <Link to={`/business/${booking.businessId}`} className="btn-ghost text-sm">
-            <MapPin className="h-4 w-4" /> Ver negócio
+            <MapPin className="h-4 w-4" /> {t('action.viewBusiness')}
           </Link>
           {onCancel && (
             <button onClick={onCancel} className="btn-ghost text-sm text-rose-600">
-              <CalendarX className="h-4 w-4" /> Cancelar
+              <CalendarX className="h-4 w-4" /> {t('action.cancel')}
             </button>
           )}
         </div>

@@ -5,6 +5,7 @@ import { appointmentApi, providerApi, resourceApi } from '@/lib/services';
 import { useToast } from '@/components/ui/Toast';
 import { FullSpinner, EmptyState, Spinner } from '@/components/ui/Feedback';
 import { NoBusiness } from './NoBusiness';
+import { useI18n } from '@/i18n/I18nContext';
 import { TIMESLOTS, type Appointment, type Provider, type Resource } from '@/types';
 
 function today(): string {
@@ -16,6 +17,7 @@ function today(): string {
 export function DashboardAgenda() {
   const { business, isLoading } = useMyBusiness();
   const toast = useToast();
+  const { t } = useI18n();
   const [date, setDate] = useState(today());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -64,14 +66,14 @@ export function DashboardAgenda() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-800">
-            <CalendarDays className="h-6 w-6" /> Agenda
+            <CalendarDays className="h-6 w-6" /> {t('agenda.title')}
           </h1>
-          <p className="text-sm text-slate-500">Agendamentos por recurso e horário</p>
+          <p className="text-sm text-slate-500">{t('agenda.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input w-auto py-2" />
           <button onClick={() => setModal({})} className="btn-primary">
-            <Plus className="h-4 w-4" /> Agendar
+            <Plus className="h-4 w-4" /> {t('agenda.book')}
           </button>
         </div>
       </div>
@@ -81,8 +83,8 @@ export function DashboardAgenda() {
       ) : resources.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
-          title="Cadastre recursos primeiro"
-          description="A agenda organiza os agendamentos por recurso (cadeira, sala...). Adicione recursos em Equipe e Recursos."
+          title={t('agenda.needResources')}
+          description={t('agenda.needResourcesDesc')}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
