@@ -46,7 +46,7 @@ public class BusinessManagementService {
     @Transactional(readOnly = true)
     public List<BusinessSummaryDto> search(BusinessCategory category, String query,
                                            Double latitude, Double longitude) {
-        return businessRepository.search(category, blankToNull(query)).stream()
+        return businessRepository.search(category, toSearchLike(query)).stream()
                 .map(b -> mapper.toSummary(b, GeoUtils.distanceKm(latitude, longitude, b.getLatitude(), b.getLongitude())))
                 .sorted(distanceComparator())
                 .toList();
@@ -284,7 +284,11 @@ public class BusinessManagementService {
                 Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
-    private String blankToNull(String s) {
-        return (s == null || s.isBlank()) ? null : s.trim();
+    /** Converte o termo de busca em um padrão LIKE em minúsculas ('%termo%') ou null. */
+    private String toSearchLike(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return "%" + s.trim().toLowerCase() + "%";
     }
 }

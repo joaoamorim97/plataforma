@@ -14,13 +14,19 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
 
     List<Business> findByActiveTrue();
 
+    /**
+     * Busca negócios ativos por categoria e/ou termo de texto.
+     * O termo é passado já normalizado (minúsculo, com %...% ou null) para evitar
+     * problemas de inferência de tipo do parâmetro no PostgreSQL (ex.: lower(bytea)).
+     */
     @Query("""
             SELECT b FROM Business b
             WHERE b.active = true
               AND (:category IS NULL OR b.category = :category)
-              AND (:search IS NULL OR LOWER(b.name) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(b.description) LIKE LOWER(CONCAT('%', :search, '%')))
+              AND (:searchLike IS NULL
+                   OR LOWER(b.name) LIKE :searchLike
+                   OR LOWER(COALESCE(b.description, '')) LIKE :searchLike)
             """)
     List<Business> search(@Param("category") BusinessCategory category,
-                          @Param("search") String search);
+                          @Param("searchLike") String searchLike);
 }
