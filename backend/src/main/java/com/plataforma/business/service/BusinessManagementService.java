@@ -10,6 +10,9 @@ import com.plataforma.common.GeoUtils;
 import com.plataforma.common.exception.BadRequestException;
 import com.plataforma.common.exception.ForbiddenException;
 import com.plataforma.common.exception.NotFoundException;
+import com.plataforma.security.AdminProperties;
+import com.plataforma.security.AuthUser;
+import com.plataforma.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,17 +29,77 @@ public class BusinessManagementService {
     private final BusinessImageRepository imageRepository;
     private final BusinessHourRepository hourRepository;
     private final BusinessMapper mapper;
+    private final AdminProperties adminProperties;
 
     public BusinessManagementService(BusinessRepository businessRepository,
                                      BusinessServiceRepository serviceRepository,
                                      BusinessImageRepository imageRepository,
                                      BusinessHourRepository hourRepository,
-                                     BusinessMapper mapper) {
+                                     BusinessMapper mapper,
+                                     AdminProperties adminProperties) {
         this.businessRepository = businessRepository;
         this.serviceRepository = serviceRepository;
         this.imageRepository = imageRepository;
         this.hourRepository = hourRepository;
         this.mapper = mapper;
+        this.adminProperties = adminProperties;
+    }
+
+    // ---------------------------------------------------------------------
+    // Admin
+    // ---------------------------------------------------------------------
+
+    /** Garante que o usuário atual é administrador da plataforma. */
+    private void requireAdmin() {
+        AuthUser user = SecurityUtils.currentUserOrNull();
+        if (user == null || !adminProperties.isAdmin(user.email())) {
+            throw new ForbiddenException("Apenas administradores podem executar esta ação.");
+        }
+    }
+
+    private boolean isCurrentUserAdmin() {
+        AuthUser user = SecurityUtils.currentUserOrNull();
+        return user != null && adminProperties.isAdmin(user.email());
+    }
+
+    /** Lista TODOS os negócios (somente admin). */
+    @Transactional(readOnly = true)
+    public List<BusinessDetailDto> adminListAll() {
+        requireAdmin();
+        return businessRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(b -> mapper.toDetail(b, null))
+                .toList();
+    }
+
+    /** Cria um negócio como admin, opcionalmente já atribuindo um dono por e-mail. */
+    @Transactional
+    public BusinessDetailDto adminCreate(BusinessRequest req) {
+        requireAdmin();
+        Business b = new Business();
+        apply(b, req);
+        if (req.active() == null) {
+            b.setActive(true);
+        }
+        // Admin não vira dono; o negócio fica pendente até o dono (por e-mail) logar.
+        b.setOwnerId(null);
+        businessRepository.save(b);
+        return mapper.toDetail(b, null);
+    }
+
+    /** Atribui/transfere o dono de um negócio por e-mail (somente admin). */
+    @Transactional
+    public BusinessDetailDto adminAssignOwner(Long businessId, String ownerEmail) {
+        requireAdmin();
+        Business b = businessRepository.findById(businessId)
+                .orElseThrow(() -> new NotFoundException("Negócio não encontrado."));
+        if (ownerEmail == null || ownerEmail.isBlank()) {
+            throw new BadRequestException("Informe o e-mail do dono.");
+        }
+        b.setOwnerEmail(ownerEmail.trim());
+        // Reseta o vínculo: o negócio será reivindicado quando o dono logar.
+        b.setOwnerId(null);
+        businessRepository.save(b);
+        return mapper.toDetail(b, null);
     }
 
     // ---------------------------------------------------------------------
@@ -125,6 +188,9 @@ public class BusinessManagementService {
         b.setCoverImageUrl(req.coverImageUrl());
         if (req.active() != null) {
             b.setActive(req.active());
+        }
+        if (req.ownerEmail() != null) {
+            b.setOwnerEmail(req.ownerEmail().isBlank() ? null : req.ownerEmail().trim());
         }
     }
 
@@ -273,7 +339,8 @@ public class BusinessManagementService {
     private Business getOwned(Long id, String ownerId) {
         Business b = businessRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Negócio não encontrado."));
-        if (!b.getOwnerId().equals(ownerId)) {
+        boolean isOwner = ownerId != null && ownerId.equals(b.getOwnerId());
+        if (!isOwner && !isCurrentUserAdmin()) {
             throw new ForbiddenException("Você não tem permissão para alterar este negócio.");
         }
         return b;

@@ -28,15 +28,21 @@ const empty: BusinessPayload = {
 };
 
 export function DashboardBusiness() {
-  const { business, isLoading, refetch } = useMyBusiness();
+  const { business, businesses, isLoading, refetch, selectBusiness } = useMyBusiness();
   const { request } = useGeolocation();
   const toast = useToast();
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState<BusinessPayload>(empty);
   const [saving, setSaving] = useState(false);
+  // Quando true, o formulário cria um NOVO negócio em vez de editar o selecionado.
+  const [creatingNew, setCreatingNew] = useState(false);
 
   useEffect(() => {
+    if (creatingNew) {
+      setForm(empty);
+      return;
+    }
     if (business) {
       setForm({
         name: business.name,
@@ -55,8 +61,10 @@ export function DashboardBusiness() {
         coverImageUrl: business.coverImageUrl ?? '',
         active: business.active,
       });
+    } else {
+      setForm(empty);
     }
-  }, [business]);
+  }, [business, creatingNew]);
 
   const set = (patch: Partial<BusinessPayload>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -75,15 +83,19 @@ export function DashboardBusiness() {
     if (!form.name.trim()) return toast.error('Informe o nome do negócio.');
     setSaving(true);
     try {
-      if (business) {
+      if (business && !creatingNew) {
         await businessApi.update(business.id, form);
         toast.success('Negócio atualizado!');
+        await refetch();
+        queryClient.invalidateQueries({ queryKey: ['my-business'] });
       } else {
-        await businessApi.create(form);
+        const created = await businessApi.create(form);
         toast.success('Negócio criado! Agora adicione serviços e fotos.');
+        await refetch();
+        queryClient.invalidateQueries({ queryKey: ['my-business'] });
+        setCreatingNew(false);
+        selectBusiness(created.id);
       }
-      await refetch();
-      queryClient.invalidateQueries({ queryKey: ['my-business'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao salvar.');
     } finally {
@@ -93,11 +105,28 @@ export function DashboardBusiness() {
 
   if (isLoading) return <FullSpinner label="Carregando..." />;
 
+  const editingExisting = Boolean(business) && !creatingNew;
+
   return (
     <form onSubmit={save} className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">{business ? 'Meu negócio' : 'Cadastre seu negócio'}</h1>
-        <p className="text-sm text-slate-500">Preencha as informações que aparecerão para os clientes.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">
+            {editingExisting ? 'Meu negócio' : 'Cadastre seu negócio'}
+          </h1>
+          <p className="text-sm text-slate-500">Preencha as informações que aparecerão para os clientes.</p>
+        </div>
+        {businesses.length > 0 && (
+          creatingNew ? (
+            <button type="button" onClick={() => setCreatingNew(false)} className="btn-ghost">
+              Cancelar novo
+            </button>
+          ) : (
+            <button type="button" onClick={() => setCreatingNew(true)} className="btn-secondary">
+              + Novo negócio
+            </button>
+          )
+        )}
       </div>
 
       {/* Info */}

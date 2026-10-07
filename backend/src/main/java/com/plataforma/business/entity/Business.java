@@ -19,8 +19,12 @@ public class Business {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "owner_id", nullable = false)
+    @Column(name = "owner_id")
     private String ownerId;
+
+    /** E-mail do dono atribuído pelo admin antes de a conta existir/logar. */
+    @Column(name = "owner_email")
+    private String ownerEmail;
 
     @Column(nullable = false)
     private String name;

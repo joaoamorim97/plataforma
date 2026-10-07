@@ -12,7 +12,7 @@ export function LoginPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from || '/explore';
+  const from = (location.state as { from?: string })?.from || '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

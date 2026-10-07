@@ -63,6 +63,7 @@ public class BusinessMapper {
         return new BusinessDetailDto(
                 b.getId(),
                 b.getOwnerId(),
+                b.getOwnerEmail(),
                 b.getName(),
                 b.getCategory(),
                 b.getDescription(),

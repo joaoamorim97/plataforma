@@ -62,7 +62,7 @@ export function MyBookingsPage() {
           title={t('bookings.emptyTitle')}
           description={t('bookings.emptyDesc')}
           action={
-            <Link to="/explore" className="btn-primary">
+            <Link to="/" className="btn-primary">
               {t('bookings.explore')}
             </Link>
           }

@@ -14,6 +14,11 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
 
     List<Business> findByActiveTrue();
 
+    List<Business> findAllByOrderByCreatedAtDesc();
+
+    /** Negócios atribuídos a um e-mail mas ainda sem dono vinculado (claim pendente). */
+    List<Business> findByOwnerEmailIgnoreCaseAndOwnerIdIsNull(String ownerEmail);
+
     /**
      * Busca negócios ativos por categoria e/ou termo de texto.
      * O termo é passado já normalizado (minúsculo, com %...% ou null) para evitar

@@ -19,5 +19,7 @@ public record BusinessRequest(
         Double latitude,
         Double longitude,
         String coverImageUrl,
-        Boolean active
+        Boolean active,
+        /** E-mail do dono (usado pelo admin ao atribuir dono). Opcional. */
+        String ownerEmail
 ) {}

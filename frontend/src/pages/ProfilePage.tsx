@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Store, User, LayoutDashboard, CalendarCheck, Heart } from 'lucide-react';
+import { LogOut, Store, User, LayoutDashboard, CalendarCheck } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { profileApi } from '@/lib/services';
@@ -63,14 +63,9 @@ export function ProfilePage() {
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => navigate('/bookings')} className="btn-secondary">
-          <CalendarCheck className="h-4 w-4" /> {t('profile.myBookings')}
-        </button>
-        <button onClick={() => navigate('/favorites')} className="btn-secondary">
-          <Heart className="h-4 w-4" /> {t('profile.favorites')}
-        </button>
-      </div>
+      <button onClick={() => navigate('/bookings')} className="btn-secondary w-full">
+        <CalendarCheck className="h-4 w-4" /> {t('profile.myBookings')}
+      </button>
 
       <div className="card space-y-4 p-6">
         <div>

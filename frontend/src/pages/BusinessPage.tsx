@@ -53,7 +53,7 @@ export function BusinessPage() {
     return (
       <div className="py-20 text-center text-slate-500">
         {t('biz.notFound')}{' '}
-        <Link to="/explore" className="font-semibold text-brand-600">
+        <Link to="/" className="font-semibold text-brand-600">
           {t('action.back')}
         </Link>
       </div>

@@ -27,7 +27,20 @@ export interface BusinessPayload {
   longitude?: number | null;
   coverImageUrl?: string | null;
   active?: boolean;
+  ownerEmail?: string | null;
 }
+
+export const adminApi = {
+  listAll() {
+    return api.get<BusinessDetail[]>('/api/admin/businesses');
+  },
+  create(payload: BusinessPayload) {
+    return api.post<BusinessDetail>('/api/admin/businesses', payload);
+  },
+  assignOwner(businessId: number, ownerEmail: string) {
+    return api.put<BusinessDetail>(`/api/admin/businesses/${businessId}/owner`, { ownerEmail });
+  },
+};
 
 export const businessApi = {
   list(params: {

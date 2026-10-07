@@ -8,6 +8,7 @@ import java.util.List;
 public record BusinessDetailDto(
         Long id,
         String ownerId,
+        String ownerEmail,
         String name,
         BusinessCategory category,
         String description,

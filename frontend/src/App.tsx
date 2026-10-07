@@ -2,14 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { HomePage } from './pages/HomePage';
-import { ExplorePage } from './pages/ExplorePage';
-import { MapPage } from './pages/MapPage';
 import { BusinessPage } from './pages/BusinessPage';
-import { FavoritesPage } from './pages/FavoritesPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyBookingsPage } from './pages/MyBookingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { AdminPage } from './pages/AdminPage';
 import { DashboardLayout } from './pages/dashboard/DashboardLayout';
 import { DashboardOverview } from './pages/dashboard/DashboardOverview';
 import { DashboardBusiness } from './pages/dashboard/DashboardBusiness';
@@ -30,14 +28,13 @@ export default function App() {
 
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/explore" element={<ExplorePage />} />
-        <Route path="/map" element={<MapPage />} />
+        {/* Página pública do negócio, acessível por link direto */}
         <Route path="/business/:id" element={<BusinessPage />} />
         <Route
-          path="/favorites"
+          path="/admin"
           element={
             <ProtectedRoute>
-              <FavoritesPage />
+              <AdminPage />
             </ProtectedRoute>
           }
         />

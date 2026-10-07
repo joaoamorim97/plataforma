@@ -1,5 +1,5 @@
 export type BusinessCategory = 'HAIRDRESSER' | 'BARBER';
-export type UserRole = 'CUSTOMER' | 'BUSINESS_OWNER';
+export type UserRole = 'CUSTOMER' | 'BUSINESS_OWNER' | 'ADMIN';
 
 export interface BusinessSummary {
   id: number;
@@ -41,7 +41,8 @@ export interface HourItem {
 
 export interface BusinessDetail {
   id: number;
-  ownerId: string;
+  ownerId: string | null;
+  ownerEmail?: string | null;
   name: string;
   category: BusinessCategory;
   description: string | null;

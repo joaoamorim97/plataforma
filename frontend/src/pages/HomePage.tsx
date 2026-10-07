@@ -1,154 +1,70 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Navigation, Sparkles } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { businessApi } from '@/lib/services';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { useFavorites } from '@/hooks/useFavorites';
-import { BusinessCard } from '@/components/BusinessCard';
-import { CardSkeleton } from '@/components/ui/Feedback';
-import { useToast } from '@/components/ui/Toast';
+import { useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { MapPin, Sparkles, LayoutDashboard, ShieldCheck, LogIn, UserPlus } from 'lucide-react';
+import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
-import type { BusinessCategory } from '@/types';
+import { FullSpinner } from '@/components/ui/Feedback';
 
+/**
+ * Página de entrada. A plataforma deixou de ser uma vitrine pública de descoberta;
+ * agora é uma ferramenta de gestão. Usuários autenticados são direcionados para a
+ * sua área (admin ou painel do dono); visitantes veem o acesso.
+ */
 export function HomePage() {
   const navigate = useNavigate();
-  const toast = useToast();
   const { t } = useI18n();
-  const { coords, request, loading: geoLoading } = useGeolocation();
-  const { isFavorite, toggle } = useFavorites();
-  const [search, setSearch] = useState('');
+  const { isAuthenticated, profile, loading } = useAuth();
 
-  const categories: { key: BusinessCategory; label: string; emoji: string }[] = [
-    { key: 'HAIRDRESSER', label: t('cat.hairdressers'), emoji: '💇' },
-    { key: 'BARBER', label: t('cat.barbers'), emoji: '💈' },
-  ];
-
-  const futureCategories = [
-    { label: t('cat.pubs'), emoji: '🍻' },
-    { label: t('cat.restaurants'), emoji: '🍽️' },
-    { label: t('cat.gyms'), emoji: '💪' },
-    { label: t('cat.clinics'), emoji: '🏥' },
-  ];
-
-  const { data: businesses, isLoading } = useQuery({
-    queryKey: ['home-businesses', coords],
-    queryFn: () =>
-      businessApi.list({
-        latitude: coords?.latitude,
-        longitude: coords?.longitude,
-      }),
-  });
-
-  const handleFindNearby = async () => {
-    try {
-      await request();
-      navigate('/explore');
-    } catch {
-      toast.info('Mostrando negócios em São Paulo.');
-      navigate('/explore');
+  useEffect(() => {
+    if (loading) return;
+    if (isAuthenticated && profile) {
+      if (profile.role === 'ADMIN') navigate('/admin', { replace: true });
+      else if (profile.role === 'BUSINESS_OWNER') navigate('/dashboard', { replace: true });
     }
-  };
+  }, [isAuthenticated, profile, loading, navigate]);
 
-  const onSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(`/explore?q=${encodeURIComponent(search)}`);
-  };
-
-  const featured = businesses?.slice(0, 3) ?? [];
+  if (loading) return <FullSpinner label={t('common.loading')} />;
 
   return (
-    <div className="space-y-10">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-800 px-6 py-12 text-white sm:px-12 sm:py-16">
-        <div className="relative z-10 max-w-2xl">
+    <div className="mx-auto max-w-3xl">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-800 px-6 py-14 text-white sm:px-12 sm:py-20">
+        <div className="relative z-10">
           <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" /> {t('home.badge')}
           </span>
           <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">
-            {t('home.headline')}
+            Gerencie seus negócios em um só lugar.
           </h1>
-          <p className="mt-4 text-base text-brand-100 sm:text-lg">
-            {t('home.subtitle')}
+          <p className="mt-4 max-w-xl text-base text-brand-100 sm:text-lg">
+            Agenda, profissionais, serviços, estoque e página pública para seus clientes agendarem.
           </p>
 
-          <form onSubmit={onSearch} className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('home.searchPlaceholder')}
-                className="h-13 w-full rounded-2xl border-0 bg-white py-3.5 pl-12 pr-4 text-slate-800 outline-none placeholder:text-slate-400"
-              />
+          {isAuthenticated ? (
+            <div className="mt-7 flex flex-wrap gap-3">
+              {profile?.role === 'ADMIN' && (
+                <Link to="/admin" className="btn inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-semibold text-brand-700 hover:bg-brand-50">
+                  <ShieldCheck className="h-4 w-4" /> Painel do administrador
+                </Link>
+              )}
+              <Link to="/dashboard" className="btn inline-flex items-center gap-2 rounded-2xl bg-white/15 px-6 py-3 font-semibold text-white backdrop-blur hover:bg-white/25">
+                <LayoutDashboard className="h-4 w-4" /> {t('nav.panel')}
+              </Link>
             </div>
-            <button
-              type="button"
-              onClick={handleFindNearby}
-              disabled={geoLoading}
-              className="btn inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-white py-3.5 font-semibold text-brand-700 hover:bg-brand-50"
-            >
-              <Navigation className="h-4 w-4" />
-              {geoLoading ? t('home.locating') : t('home.nearMe')}
-            </button>
-          </form>
+          ) : (
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link to="/login" className="btn inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-semibold text-brand-700 hover:bg-brand-50">
+                <LogIn className="h-4 w-4" /> {t('action.login')}
+              </Link>
+              <Link to="/register" className="btn inline-flex items-center gap-2 rounded-2xl bg-white/15 px-6 py-3 font-semibold text-white backdrop-blur hover:bg-white/25">
+                <UserPlus className="h-4 w-4" /> {t('action.register')}
+              </Link>
+            </div>
+          )}
         </div>
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -bottom-24 right-24 h-72 w-72 rounded-full bg-white/5" />
+        <MapPin className="pointer-events-none absolute bottom-6 right-6 h-10 w-10 text-white/20" />
       </section>
-
-      {/* Categories */}
-      <section>
-        <h2 className="mb-4 text-lg font-bold text-slate-800">{t('home.categories')}</h2>
-        <div className="flex flex-wrap gap-3">
-          {categories.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => navigate(`/explore?category=${c.key}`)}
-              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left transition hover:border-brand-300 hover:shadow-card"
-            >
-              <span className="text-2xl">{c.emoji}</span>
-              <span className="font-semibold text-slate-700">{c.label}</span>
-            </button>
-          ))}
-          {futureCategories.map((c) => (
-            <div
-              key={c.label}
-              className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-4 text-left"
-            >
-              <span className="text-2xl opacity-50">{c.emoji}</span>
-              <div>
-                <span className="block font-semibold text-slate-400">{c.label}</span>
-                <span className="text-[11px] text-slate-400">{t('home.comingSoon')}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">{t('home.featured')}</h2>
-          <button onClick={() => navigate('/explore')} className="text-sm font-semibold text-brand-600 hover:underline">
-            {t('action.seeAll')}
-          </button>
-        </div>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
-            : featured.map((b) => (
-                <BusinessCard key={b.id} business={b} favorite={isFavorite(b.id)} onToggleFavorite={toggle} />
-              ))}
-        </div>
-      </section>
-
-      {!coords && (
-        <div className="flex items-center gap-3 rounded-2xl bg-brand-50 px-5 py-4 text-sm text-brand-800">
-          <MapPin className="h-5 w-5 shrink-0" />
-          {t('home.enableLocation')}
-        </div>
-      )}
     </div>
   );
 }

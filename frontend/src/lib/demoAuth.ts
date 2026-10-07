@@ -69,6 +69,11 @@ function uuid(): string {
   });
 }
 
+// Conta de administrador fixa para o modo demo.
+const DEMO_ADMIN_EMAIL = 'admin@perto.app';
+const DEMO_ADMIN_PASSWORD = 'admin123';
+const DEMO_ADMIN_ID = 'demo-admin-fixed-id';
+
 export const demoAuth = {
   signUp(email: string, password: string, name: string, role: UserRole): DemoSession {
     const users = loadUsers();
@@ -82,6 +87,16 @@ export const demoAuth = {
   },
 
   signIn(email: string, password: string): DemoSession {
+    // Admin fixo do modo demo (não precisa cadastrar).
+    if (email.toLowerCase() === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD) {
+      return this.persistSession({
+        id: DEMO_ADMIN_ID,
+        email: DEMO_ADMIN_EMAIL,
+        password: DEMO_ADMIN_PASSWORD,
+        name: 'Administrador',
+        role: 'ADMIN',
+      });
+    }
     const users = loadUsers();
     const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (!user || user.password !== password) {

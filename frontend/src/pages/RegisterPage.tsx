@@ -29,7 +29,7 @@ export function RegisterPage() {
     try {
       await signUp(email, password, name, role);
       toast.success('Conta criada com sucesso!');
-      navigate(role === 'BUSINESS_OWNER' ? '/dashboard/business' : '/explore', { replace: true });
+      navigate(role === 'BUSINESS_OWNER' ? '/dashboard/business' : '/', { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao criar conta.');
     } finally {
