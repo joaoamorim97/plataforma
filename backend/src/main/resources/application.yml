@@ -11,10 +11,15 @@ server:
   port: ${PORT:${SERVER_PORT:8080}}
 
 app:
-  # Supabase JWT secret used to validate access tokens (Project Settings -> API -> JWT Secret).
-  # When blank, JWT signature validation is skipped (dev convenience only).
   supabase:
+    # Supabase JWT secret (HS256 legado) usado para validar access tokens.
+    # Project Settings -> API -> JWT Secret. Em branco = não valida HS256.
     jwt-secret: ${SUPABASE_JWT_SECRET:}
+    # JWKS do Supabase para validar tokens ASSIMÉTRICOS (ES256/RS256), que é o
+    # padrão novo. Informe a URL completa via SUPABASE_JWKS_URL, por exemplo:
+    #   https://<project_ref>.supabase.co/auth/v1/.well-known/jwks.json
+    # Em branco = não valida tokens assimétricos.
+    jwks-url: ${SUPABASE_JWKS_URL:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173}
 

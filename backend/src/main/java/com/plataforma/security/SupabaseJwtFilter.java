@@ -27,29 +27,56 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Validates Supabase access tokens (HS256 signed with the project JWT secret).
+ * Valida os access tokens do Supabase.
  *
- * When no JWT secret is configured, the signature check is skipped and the token
- * payload is simply decoded. This is a development convenience only; always
- * configure SUPABASE_JWT_SECRET in production.
+ * <p>O Supabase emite tokens assinados com:
+ * <ul>
+ *   <li><b>Chaves assimétricas</b> (ES256/RS256) — padrão novo. A assinatura é
+ *       verificada com a chave pública obtida do JWKS do projeto
+ *       (resolvida por "kid" via {@link SupabaseKeyLocator}).</li>
+ *   <li><b>HS256</b> (segredo compartilhado legado) — verificado com o
+ *       {@code SUPABASE_JWT_SECRET}, quando configurado.</li>
+ * </ul>
+ *
+ * <p>Quando nenhuma forma de verificação está disponível, o payload é apenas
+ * decodificado sem checar a assinatura. Isso é uma conveniência de
+ * desenvolvimento; em produção configure o JWKS (project ref) e/ou o
+ * SUPABASE_JWT_SECRET.
  */
 @Component
 public class SupabaseJwtFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(SupabaseJwtFilter.class);
 
-    private final SecretKey key;
-    private final boolean verifySignature;
+    private final SecretKey hs256Key;
+    private final boolean hs256Enabled;
+    private final SupabaseKeyLocator keyLocator;
+    private final boolean jwksEnabled;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SupabaseJwtFilter(@Value("${app.supabase.jwt-secret:}") String jwtSecret) {
+    public SupabaseJwtFilter(
+            @Value("${app.supabase.jwt-secret:}") String jwtSecret,
+            @Value("${app.supabase.jwks-url:}") String jwksUrl) {
+
         if (StringUtils.hasText(jwtSecret)) {
-            this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-            this.verifySignature = true;
+            this.hs256Key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            this.hs256Enabled = true;
         } else {
-            this.key = null;
-            this.verifySignature = false;
-            log.warn("SUPABASE_JWT_SECRET is not set. JWT signatures will NOT be verified (dev mode).");
+            this.hs256Key = null;
+            this.hs256Enabled = false;
+        }
+
+        if (StringUtils.hasText(jwksUrl)) {
+            this.keyLocator = new SupabaseKeyLocator(jwksUrl.trim());
+            this.jwksEnabled = true;
+        } else {
+            this.keyLocator = null;
+            this.jwksEnabled = false;
+        }
+
+        if (!hs256Enabled && !jwksEnabled) {
+            log.warn("Nem SUPABASE_JWT_SECRET nem JWKS configurados. "
+                    + "As assinaturas dos JWT NÃO serão verificadas (modo dev).");
         }
     }
 
@@ -69,7 +96,7 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception ex) {
-                log.debug("Rejected invalid JWT: {}", ex.getMessage());
+                log.debug("JWT rejeitado: {}", ex.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
@@ -78,19 +105,60 @@ public class SupabaseJwtFilter extends OncePerRequestFilter {
     }
 
     private AuthUser resolve(String token) throws IOException {
-        if (verifySignature) {
+        String alg = algorithmOf(token);
+
+        // Tokens assimétricos (ES256/RS256/ES512/RS512...) -> verifica via JWKS.
+        if (jwksEnabled && alg != null && !alg.startsWith("HS")) {
             Claims claims = Jwts.parser()
-                    .verifyWith(key)
+                    .keyLocator(keyLocator)
                     .clockSkewSeconds(60)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            return new AuthUser(claims.getSubject(), claims.get("email", String.class));
+            return toAuthUser(claims);
         }
-        return decodePayloadUnsafe(token);
+
+        // Tokens HS256 (segredo compartilhado legado).
+        if (hs256Enabled && (alg == null || alg.startsWith("HS"))) {
+            Claims claims = Jwts.parser()
+                    .verifyWith(hs256Key)
+                    .clockSkewSeconds(60)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return toAuthUser(claims);
+        }
+
+        // Sem verificador compatível configurado: modo dev (sem checar assinatura).
+        if (!hs256Enabled && !jwksEnabled) {
+            return decodePayloadUnsafe(token);
+        }
+
+        throw new IllegalStateException("Nenhum verificador compatível para o algoritmo do token: " + alg);
     }
 
-    /** Dev mode: decode the JWT payload (middle segment) without verifying the signature. */
+    private AuthUser toAuthUser(Claims claims) {
+        return new AuthUser(claims.getSubject(), claims.get("email", String.class));
+    }
+
+    /** Lê o campo "alg" do header do JWT (primeiro segmento) sem verificar a assinatura. */
+    @SuppressWarnings("unchecked")
+    private String algorithmOf(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return null;
+            }
+            byte[] headerBytes = Base64.getUrlDecoder().decode(parts[0]);
+            Map<String, Object> header = objectMapper.readValue(headerBytes, Map.class);
+            Object alg = header.get("alg");
+            return alg == null ? null : alg.toString();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /** Modo dev: decodifica o payload (segmento do meio) sem verificar a assinatura. */
     @SuppressWarnings("unchecked")
     private AuthUser decodePayloadUnsafe(String token) throws IOException {
         String[] parts = token.split("\\.");
