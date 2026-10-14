@@ -29,6 +29,10 @@ public class Provider {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    /** Recurso (cadeira/sala) padrão onde este profissional atende. */
+    @Column(name = "default_resource_id")
+    private Long defaultResourceId;
+
     @Column(nullable = false)
     private Boolean active = true;
 

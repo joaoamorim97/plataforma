@@ -1,7 +1,9 @@
 package com.plataforma.management.service;
 
 import com.plataforma.business.entity.Business;
+import com.plataforma.business.entity.BusinessHour;
 import com.plataforma.business.entity.BusinessService;
+import com.plataforma.business.repository.BusinessHourRepository;
 import com.plataforma.business.repository.BusinessRepository;
 import com.plataforma.business.repository.BusinessServiceRepository;
 import com.plataforma.common.exception.BadRequestException;
@@ -13,11 +15,14 @@ import com.plataforma.management.entity.InventoryItem;
 import com.plataforma.management.entity.Provider;
 import com.plataforma.management.entity.Resource;
 import com.plataforma.management.repository.*;
+import com.plataforma.security.AdminProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -37,19 +42,25 @@ public class ManagementService {
     private final ResourceRepository resourceRepository;
     private final AppointmentRepository appointmentRepository;
     private final InventoryItemRepository inventoryRepository;
+    private final BusinessHourRepository hourRepository;
+    private final AdminProperties adminProperties;
 
     public ManagementService(BusinessRepository businessRepository,
                              BusinessServiceRepository serviceRepository,
                              ProviderRepository providerRepository,
                              ResourceRepository resourceRepository,
                              AppointmentRepository appointmentRepository,
-                             InventoryItemRepository inventoryRepository) {
+                             InventoryItemRepository inventoryRepository,
+                             BusinessHourRepository hourRepository,
+                             AdminProperties adminProperties) {
         this.businessRepository = businessRepository;
         this.serviceRepository = serviceRepository;
         this.providerRepository = providerRepository;
         this.resourceRepository = resourceRepository;
         this.appointmentRepository = appointmentRepository;
         this.inventoryRepository = inventoryRepository;
+        this.hourRepository = hourRepository;
+        this.adminProperties = adminProperties;
     }
 
     // =====================================================================
@@ -110,6 +121,15 @@ public class ManagementService {
         p.setRole(req.role());
         p.setPhone(req.phone());
         p.setAvatarUrl(req.avatarUrl());
+        // Recurso padrão (opcional): precisa pertencer ao mesmo negócio.
+        if (req.defaultResourceId() != null) {
+            resourceRepository.findById(req.defaultResourceId())
+                    .filter(r -> r.getBusinessId().equals(p.getBusinessId()))
+                    .orElseThrow(() -> new BadRequestException("Recurso padrão inválido."));
+            p.setDefaultResourceId(req.defaultResourceId());
+        } else {
+            p.setDefaultResourceId(null);
+        }
         if (req.active() != null) p.setActive(req.active());
     }
 
@@ -349,12 +369,15 @@ public class ManagementService {
     // Agendamento pelo próprio cliente (self-booking)
     // =====================================================================
 
-    /** Horários oferecidos para agendamento pelo cliente. */
-    static final List<String> SLOTS = List.of(
-            "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
-            "15:00", "16:00", "17:00", "18:00", "19:00", "20:00");
+    /** Fallback de horário quando o negócio não configurou os horários da semana. */
+    private static final String DEFAULT_OPENING = "08:00";
+    private static final String DEFAULT_CLOSING = "20:00";
 
-    /** Disponibilidade pública: lista de horários do dia e se estão livres. */
+    /**
+     * Disponibilidade pública: horários do dia (apenas dentro do horário de
+     * funcionamento configurado para aquele dia da semana) e se estão livres.
+     * Em dia fechado, retorna lista vazia.
+     */
     @Transactional(readOnly = true)
     public List<SlotDto> availability(Long businessId, String date, Long providerId) {
         Business b = businessRepository.findById(businessId)
@@ -362,21 +385,64 @@ public class ManagementService {
         if (!Boolean.TRUE.equals(b.getActive())) {
             throw new NotFoundException("Negócio não encontrado.");
         }
+
+        // Dia da semana da data no formato do app: 0 = Domingo ... 6 = Sábado.
+        int dow;
+        try {
+            dow = LocalDate.parse(date).getDayOfWeek().getValue() % 7; // java (Seg=1..Dom=7) -> Dom=0
+        } catch (Exception e) {
+            throw new BadRequestException("Data inválida.");
+        }
+
+        // Horário configurado para o dia (se existir).
+        BusinessHour hour = hourRepository.findByBusinessIdOrderByDayOfWeek(businessId).stream()
+                .filter(h -> h.getDayOfWeek() != null && h.getDayOfWeek() == dow)
+                .findFirst()
+                .orElse(null);
+
+        // Dia marcado como fechado => nenhum horário disponível.
+        if (hour != null && !Boolean.TRUE.equals(hour.getOpen())) {
+            return List.of();
+        }
+
+        String openingStr = hour != null && hour.getOpeningTime() != null ? hour.getOpeningTime() : DEFAULT_OPENING;
+        String closingStr = hour != null && hour.getClosingTime() != null ? hour.getClosingTime() : DEFAULT_CLOSING;
+        LocalTime opening = parseTime(openingStr, LocalTime.of(8, 0));
+        LocalTime closing = parseTime(closingStr, LocalTime.of(20, 0));
+
+        // Gera slots de hora em hora, do início (inclusive) ao fim (exclusive).
+        List<String> slots = new ArrayList<>();
+        LocalTime t = opening.withMinute(0);
+        if (opening.getMinute() != 0) {
+            t = t.plusHours(1); // começa na próxima hora cheia se abrir "quebrado" (ex: 08:30 -> 09:00)
+        }
+        while (t.isBefore(closing)) {
+            slots.add(String.format("%02d:%02d", t.getHour(), t.getMinute()));
+            t = t.plusHours(1);
+            if (t.equals(LocalTime.MIDNIGHT)) break; // evita loop se fechar à meia-noite
+        }
+
         List<Appointment> dayAppts = appointmentRepository
                 .findByBusinessIdAndDateAndStatusNot(businessId, date, "CANCELLED");
 
-        return SLOTS.stream().map(slot -> {
+        return slots.stream().map(slot -> {
             boolean taken;
             if (providerId != null) {
-                // horário ocupado se o profissional já tem agendamento nele
                 taken = dayAppts.stream().anyMatch(a -> slot.equals(a.getTime())
                         && providerId.equals(a.getProviderId()));
             } else {
-                // sem profissional específico: considera ocupado apenas se há agendamento sem profissional nesse horário
                 taken = dayAppts.stream().anyMatch(a -> slot.equals(a.getTime()) && a.getProviderId() == null);
             }
             return new SlotDto(slot, !taken);
         }).toList();
+    }
+
+    private LocalTime parseTime(String value, LocalTime fallback) {
+        try {
+            return LocalTime.parse(value.trim());
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     /** Cria um agendamento feito pelo próprio cliente (não exige ownership). */
@@ -404,6 +470,23 @@ public class ManagementService {
                 ? req.clientName().trim()
                 : (fallbackName != null && !fallbackName.isBlank() ? fallbackName : "Cliente");
 
+        // Recurso (cadeira) do profissional escolhido: faz o agendamento aparecer
+        // automaticamente na agenda daquele recurso. Só é usado se o recurso
+        // estiver livre naquele horário; senão, deixa sem recurso (não bloqueia).
+        Long resourceId = null;
+        if (req.providerId() != null) {
+            Provider provider = providerRepository.findById(req.providerId()).orElse(null);
+            if (provider != null && provider.getDefaultResourceId() != null) {
+                boolean resourceBusy = appointmentRepository
+                        .findByBusinessIdAndDateAndTimeAndResourceId(
+                                businessId, req.date(), req.time(), provider.getDefaultResourceId())
+                        .isPresent();
+                if (!resourceBusy) {
+                    resourceId = provider.getDefaultResourceId();
+                }
+            }
+        }
+
         Appointment a = new Appointment();
         a.setBusinessId(businessId);
         a.setClientUserId(clientUserId);
@@ -412,6 +495,7 @@ public class ManagementService {
         a.setClientName(name);
         a.setClientPhone(req.clientPhone());
         a.setProviderId(req.providerId());
+        a.setResourceId(resourceId);
         a.setServiceId(req.serviceId());
         a.setStatus("BOOKED");
         a.setNotes(req.notes());
@@ -476,10 +560,16 @@ public class ManagementService {
     private Business requireOwner(Long businessId, String userId) {
         Business b = businessRepository.findById(businessId)
                 .orElseThrow(() -> new NotFoundException("Negócio não encontrado."));
-        if (!b.getOwnerId().equals(userId)) {
+        boolean isOwner = b.getOwnerId() != null && b.getOwnerId().equals(userId);
+        if (!isOwner && !isCurrentUserAdmin()) {
             throw new ForbiddenException("Você não tem permissão para gerenciar este negócio.");
         }
         return b;
+    }
+
+    private boolean isCurrentUserAdmin() {
+        var user = com.plataforma.security.SecurityUtils.currentUserOrNull();
+        return user != null && adminProperties.isAdmin(user.email());
     }
 
     private List<AppointmentDto> enrich(Long businessId, List<Appointment> appts) {
@@ -514,7 +604,7 @@ public class ManagementService {
 
     private ProviderDto toProviderDto(Provider p) {
         return new ProviderDto(p.getId(), p.getName(), p.getRole(), p.getPhone(), p.getAvatarUrl(),
-                Boolean.TRUE.equals(p.getActive()));
+                p.getDefaultResourceId(), Boolean.TRUE.equals(p.getActive()));
     }
 
     private ResourceDto toResourceDto(Resource r) {

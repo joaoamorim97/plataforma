@@ -130,6 +130,7 @@ export function DashboardTeam() {
         <ProviderModal
           businessId={business.id}
           provider={provModal === 'new' ? null : provModal}
+          resources={resources}
           onClose={() => setProvModal(null)}
           onSaved={() => {
             setProvModal(null);
@@ -166,18 +167,19 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
   );
 }
 
-function ProviderModal({ businessId, provider, onClose, onSaved }: { businessId: number; provider: Provider | null; onClose: () => void; onSaved: () => void }) {
+function ProviderModal({ businessId, provider, resources, onClose, onSaved }: { businessId: number; provider: Provider | null; resources: Resource[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [name, setName] = useState(provider?.name ?? '');
   const [role, setRole] = useState(provider?.role ?? '');
   const [phone, setPhone] = useState(provider?.phone ?? '');
+  const [defaultResourceId, setDefaultResourceId] = useState<number | null>(provider?.defaultResourceId ?? null);
   const [saving, setSaving] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { name, role, phone };
+      const payload = { name, role, phone, defaultResourceId };
       if (provider) await providerApi.update(businessId, provider.id, payload);
       else await providerApi.create(businessId, payload);
       toast.success('Profissional salvo!');
@@ -203,6 +205,22 @@ function ProviderModal({ businessId, provider, onClose, onSaved }: { businessId:
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">Telefone</label>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">Cadeira / recurso padrão</label>
+          <select
+            value={defaultResourceId ?? ''}
+            onChange={(e) => setDefaultResourceId(e.target.value ? Number(e.target.value) : null)}
+            className="input"
+          >
+            <option value="">Sem recurso fixo</option>
+            {resources.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}{r.kind ? ` · ${r.kind}` : ''}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-400">
+            Agendamentos com este profissional aparecem automaticamente na agenda deste recurso.
+          </p>
         </div>
         <button type="submit" disabled={saving} className="btn-primary w-full">
           {saving && <Spinner className="h-4 w-4" />} Salvar

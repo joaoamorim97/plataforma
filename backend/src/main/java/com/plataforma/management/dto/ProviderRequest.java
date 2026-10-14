@@ -7,5 +7,6 @@ public record ProviderRequest(
         String role,
         String phone,
         String avatarUrl,
+        Long defaultResourceId,
         Boolean active
 ) {}

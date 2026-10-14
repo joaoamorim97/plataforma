@@ -121,6 +121,7 @@ export interface Provider {
   role: string | null;
   phone: string | null;
   avatarUrl: string | null;
+  defaultResourceId: number | null;
   active: boolean;
 }
 

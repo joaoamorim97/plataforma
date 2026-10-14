@@ -134,9 +134,31 @@ public class BusinessManagementService {
         return mapper.toDetail(b, GeoUtils.distanceKm(latitude, longitude, b.getLatitude(), b.getLongitude()));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<BusinessDetailDto> findMine(String ownerId) {
+        // Admin gerencia todos os negócios da plataforma pelo painel.
+        if (isCurrentUserAdmin()) {
+            return businessRepository.findAllByOrderByCreatedAtDesc().stream()
+                    .sorted(Comparator.comparing(Business::getId))
+                    .map(b -> mapper.toDetail(b, null))
+                    .toList();
+        }
+        // Reivindica, de forma defensiva, negócios atribuídos ao e-mail do usuário
+        // atual que ainda estão sem dono. Cobre o caso de negócios criados pelo admin
+        // (owner_id nulo) que, por algum motivo, não foram vinculados no login.
+        AuthUser user = SecurityUtils.currentUserOrNull();
+        if (user != null && user.email() != null && !user.email().isBlank()) {
+            List<Business> pending =
+                    businessRepository.findByOwnerEmailIgnoreCaseAndOwnerIdIsNull(user.email().trim());
+            if (!pending.isEmpty()) {
+                for (Business b : pending) {
+                    b.setOwnerId(ownerId);
+                }
+                businessRepository.saveAll(pending);
+            }
+        }
         return businessRepository.findByOwnerId(ownerId).stream()
+                .sorted(Comparator.comparing(Business::getId))
                 .map(b -> mapper.toDetail(b, null))
                 .toList();
     }

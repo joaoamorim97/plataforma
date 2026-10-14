@@ -34,13 +34,16 @@ public class OrderService {
     private final BusinessRepository businessRepository;
     private final InventoryItemRepository inventoryRepository;
     private final OrderRepository orderRepository;
+    private final com.plataforma.security.AdminProperties adminProperties;
 
     public OrderService(BusinessRepository businessRepository,
                         InventoryItemRepository inventoryRepository,
-                        OrderRepository orderRepository) {
+                        OrderRepository orderRepository,
+                        com.plataforma.security.AdminProperties adminProperties) {
         this.businessRepository = businessRepository;
         this.inventoryRepository = inventoryRepository;
         this.orderRepository = orderRepository;
+        this.adminProperties = adminProperties;
     }
 
     // =====================================================================
@@ -211,7 +214,10 @@ public class OrderService {
     private Business requireOwner(Long businessId, String userId) {
         Business b = businessRepository.findById(businessId)
                 .orElseThrow(() -> new NotFoundException("Negócio não encontrado."));
-        if (!b.getOwnerId().equals(userId)) {
+        boolean isOwner = b.getOwnerId() != null && b.getOwnerId().equals(userId);
+        var user = com.plataforma.security.SecurityUtils.currentUserOrNull();
+        boolean isAdmin = user != null && adminProperties.isAdmin(user.email());
+        if (!isOwner && !isAdmin) {
             throw new ForbiddenException("Você não tem permissão para gerenciar este negócio.");
         }
         return b;

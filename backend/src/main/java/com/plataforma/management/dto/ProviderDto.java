@@ -6,5 +6,6 @@ public record ProviderDto(
         String role,
         String phone,
         String avatarUrl,
+        Long defaultResourceId,
         boolean active
 ) {}
