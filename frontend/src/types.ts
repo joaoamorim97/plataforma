@@ -210,3 +210,45 @@ export interface MyBooking {
   providerName: string | null;
   status: AppointmentStatus;
 }
+
+// ---------------------------------------------------------------------
+// Produtos de revenda e pedidos (carrinho + checkout)
+// ---------------------------------------------------------------------
+
+export interface Product {
+  id: number;
+  name: string;
+  unitPrice: number | null;
+  available: number;
+}
+
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'DELIVERED' | 'CANCELLED';
+
+export interface OrderItem {
+  id: number;
+  inventoryId: number | null;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface Order {
+  id: number;
+  businessId: number;
+  businessName: string | null;
+  clientName: string;
+  clientPhone: string | null;
+  total: number;
+  status: OrderStatus;
+  notes: string | null;
+  createdAt: string | null;
+  items: OrderItem[];
+}
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING: 'Pendente',
+  CONFIRMED: 'Confirmado',
+  DELIVERED: 'Entregue',
+  CANCELLED: 'Cancelado',
+};

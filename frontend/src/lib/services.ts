@@ -239,3 +239,30 @@ export const bookingApi = {
   myBookings: () => api.get<MyBooking[]>('/api/me/bookings'),
   cancel: (appointmentId: number) => api.delete<void>(`/api/me/bookings/${appointmentId}`),
 };
+
+// ---------------------------------------------------------------------
+// Produtos de revenda + pedidos (carrinho / checkout)
+// ---------------------------------------------------------------------
+
+import type { Order, OrderStatus, Product } from '@/types';
+
+export interface CheckoutPayload {
+  items: { productId: number; quantity: number }[];
+  clientName?: string | null;
+  clientPhone?: string | null;
+  notes?: string | null;
+}
+
+export const orderApi = {
+  // público: produtos de revenda com estoque
+  products: (businessId: number) => api.get<Product[]>(`/api/businesses/${businessId}/products`),
+  // cliente autenticado
+  checkout: (businessId: number, payload: CheckoutPayload) =>
+    api.post<Order>(`/api/businesses/${businessId}/orders`, payload),
+  myOrders: () => api.get<Order[]>('/api/me/orders'),
+  cancel: (orderId: number) => api.delete<void>(`/api/me/orders/${orderId}`),
+  // dono do negócio
+  listForBusiness: (businessId: number) => api.get<Order[]>(`/api/businesses/${businessId}/orders`),
+  updateStatus: (businessId: number, orderId: number, status: OrderStatus) =>
+    api.put<Order>(`/api/businesses/${businessId}/orders/${orderId}/status`, { status }),
+};

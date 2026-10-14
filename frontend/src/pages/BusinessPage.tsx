@@ -3,8 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Heart, MapPin, Phone, MessageCircle, Navigation, Clock, Star, Share2, ChevronLeft, ChevronRight, CalendarPlus,
+  ShoppingBag, ShoppingCart, Plus, Minus, X,
 } from 'lucide-react';
-import { businessApi, reviewApi, favoriteApi } from '@/lib/services';
+import { businessApi, reviewApi, favoriteApi, orderApi } from '@/lib/services';
+import type { Product } from '@/types';
+import { Spinner } from '@/components/ui/Feedback';
 import { BookingModal } from '@/components/BookingModal';
 import { useI18n } from '@/i18n/I18nContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -199,6 +202,13 @@ export function BusinessPage() {
             )}
           </section>
 
+          {/* Products (resale) */}
+          <ProductsSection
+            businessId={businessId}
+            businessName={business.name}
+            isAuthenticated={isAuthenticated}
+          />
+
           {/* Gallery thumbnails */}
           {images.length > 1 && (
             <section className="card p-5">
@@ -374,5 +384,234 @@ function ReviewsSection({
         </ul>
       )}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Produtos de revenda + carrinho + checkout
+// ---------------------------------------------------------------------
+
+function ProductsSection({
+  businessId,
+  businessName,
+  isAuthenticated,
+}: {
+  businessId: number;
+  businessName: string;
+  isAuthenticated: boolean;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { t } = useI18n();
+  // carrinho: productId -> quantidade
+  const [cart, setCart] = useState<Record<number, number>>({});
+  const [showCheckout, setShowCheckout] = useState(false);
+
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['products', businessId],
+    queryFn: () => orderApi.products(businessId),
+    enabled: Number.isFinite(businessId),
+  });
+
+  if (isLoading) {
+    return (
+      <section className="card p-5">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
+          <ShoppingBag className="h-5 w-5" /> {t('prod.title')}
+        </h2>
+        <div className="flex justify-center py-6"><Spinner className="h-6 w-6" /></div>
+      </section>
+    );
+  }
+
+  // Sem produtos de revenda: não mostra a seção para não poluir a página.
+  if (!products || products.length === 0) return null;
+
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const add = (p: Product) => {
+    setCart((c) => {
+      const current = c[p.id] ?? 0;
+      if (current >= p.available) return c; // respeita o estoque
+      return { ...c, [p.id]: current + 1 };
+    });
+  };
+  const dec = (p: Product) => {
+    setCart((c) => {
+      const current = c[p.id] ?? 0;
+      if (current <= 1) {
+        const { [p.id]: _, ...rest } = c;
+        return rest;
+      }
+      return { ...c, [p.id]: current - 1 };
+    });
+  };
+
+  const cartEntries = Object.entries(cart)
+    .map(([id, qty]) => ({ product: byId.get(Number(id)), qty }))
+    .filter((e): e is { product: Product; qty: number } => Boolean(e.product));
+  const totalItems = cartEntries.reduce((s, e) => s + e.qty, 0);
+  const totalPrice = cartEntries.reduce((s, e) => s + (e.product.unitPrice ?? 0) * e.qty, 0);
+
+  const openCheckout = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: `/business/${businessId}` } });
+      return;
+    }
+    setShowCheckout(true);
+  };
+
+  return (
+    <section className="card p-5">
+      <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
+        <ShoppingBag className="h-5 w-5" /> {t('prod.title')}
+      </h2>
+      <ul className="divide-y divide-slate-100">
+        {products.map((p) => {
+          const qty = cart[p.id] ?? 0;
+          return (
+            <li key={p.id} className="flex items-center justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <p className="truncate font-medium text-slate-800">{p.name}</p>
+                <p className="text-xs text-slate-500">
+                  {p.unitPrice != null ? formatPrice(p.unitPrice) : '--'}
+                  <span className="ml-2 text-slate-400">· {p.available} {t('prod.inStock')}</span>
+                </p>
+              </div>
+              {qty === 0 ? (
+                <button onClick={() => add(p)} className="btn-secondary shrink-0">
+                  <Plus className="h-4 w-4" /> {t('prod.add')}
+                </button>
+              ) : (
+                <div className="inline-flex shrink-0 items-center overflow-hidden rounded-lg border border-slate-200">
+                  <button onClick={() => dec(p)} className="bg-white px-3 py-1.5 font-bold text-slate-600 hover:bg-slate-100">
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-[2rem] bg-white text-center text-sm font-bold text-slate-800">{qty}</span>
+                  <button
+                    onClick={() => add(p)}
+                    disabled={qty >= p.available}
+                    className="border-l border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {totalItems > 0 && (
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
+          <div>
+            <p className="text-xs text-slate-500">{totalItems} {totalItems === 1 ? t('prod.item') : t('prod.items')}</p>
+            <p className="text-lg font-black text-slate-800">{formatPrice(totalPrice)}</p>
+          </div>
+          <button onClick={openCheckout} className="btn-primary">
+            <ShoppingCart className="h-4 w-4" /> {t('prod.checkout')}
+          </button>
+        </div>
+      )}
+
+      {showCheckout && (
+        <CheckoutModal
+          businessId={businessId}
+          businessName={businessName}
+          items={cartEntries}
+          total={totalPrice}
+          onClose={() => setShowCheckout(false)}
+          onDone={() => {
+            setShowCheckout(false);
+            setCart({});
+            queryClient.invalidateQueries({ queryKey: ['products', businessId] });
+            navigate('/orders');
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function CheckoutModal({
+  businessId,
+  businessName,
+  items,
+  total,
+  onClose,
+  onDone,
+}: {
+  businessId: number;
+  businessName: string;
+  items: { product: Product; qty: number }[];
+  total: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const toast = useToast();
+  const { t } = useI18n();
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await orderApi.checkout(businessId, {
+        items: items.map((i) => ({ productId: i.product.id, quantity: i.qty })),
+        clientName: clientName.trim() || null,
+        clientPhone: clientPhone.trim() || null,
+        notes: notes.trim() || null,
+      });
+      toast.success(t('prod.orderPlaced'));
+      onDone();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao finalizar o pedido.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4" onClick={onClose}>
+      <form onClick={(e) => e.stopPropagation()} onSubmit={submit} className="w-full max-w-md space-y-4 rounded-t-3xl bg-white p-6 sm:rounded-2xl animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-800">{t('prod.checkoutTitle')}</h2>
+          <button type="button" onClick={onClose} className="btn-ghost p-2"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="text-sm text-slate-500">{businessName}</p>
+
+        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-100">
+          {items.map((i) => (
+            <li key={i.product.id} className="flex items-center justify-between px-3 py-2 text-sm">
+              <span className="text-slate-700">{i.qty}× {i.product.name}</span>
+              <span className="font-medium text-slate-800">{formatPrice((i.product.unitPrice ?? 0) * i.qty)}</span>
+            </li>
+          ))}
+          <li className="flex items-center justify-between px-3 py-2.5">
+            <span className="font-semibold text-slate-700">{t('prod.total')}</span>
+            <span className="text-lg font-black text-brand-700">{formatPrice(total)}</span>
+          </li>
+        </ul>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('prod.yourName')}</label>
+          <input value={clientName} onChange={(e) => setClientName(e.target.value)} className="input" placeholder={t('prod.yourNamePlaceholder')} />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('prod.phone')}</label>
+          <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="input" placeholder="(11) 99999-9999" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('prod.notes')}</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input resize-none" placeholder={t('prod.notesPlaceholder')} />
+        </div>
+
+        <button type="submit" disabled={saving} className="btn-primary w-full">
+          {saving && <Spinner className="h-4 w-4" />} {t('prod.confirmOrder')}
+        </button>
+      </form>
+    </div>
   );
 }

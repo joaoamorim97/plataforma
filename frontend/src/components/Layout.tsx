@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { MapPin, LogOut, LayoutDashboard, ShieldCheck, CalendarCheck, User } from 'lucide-react';
+import { MapPin, LogOut, LayoutDashboard, ShieldCheck, CalendarCheck, User, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/auth/AuthContext';
 import { useI18n } from '@/i18n/I18nContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -46,6 +46,9 @@ export function Layout() {
                 )}
                 <Link to="/bookings" className="btn-ghost hidden sm:inline-flex" title={t('profile.myBookings')}>
                   <CalendarCheck className="h-4 w-4" />
+                </Link>
+                <Link to="/orders" className="btn-ghost hidden sm:inline-flex" title={t('orders.title')}>
+                  <ShoppingBag className="h-4 w-4" />
                 </Link>
                 <Link to="/profile" className="flex items-center gap-2">
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">

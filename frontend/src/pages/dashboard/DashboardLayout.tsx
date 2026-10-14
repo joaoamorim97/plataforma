@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Store, Scissors, Image, Clock, Star, ArrowLeft, Eye, MapPin, CalendarDays, CalendarClock, Users, Boxes, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Store, Scissors, Image, Clock, Star, ArrowLeft, Eye, MapPin, CalendarDays, CalendarClock, Users, Boxes, ChevronDown, ShoppingBag } from 'lucide-react';
 import { MyBusinessProvider, useMyBusiness } from '@/hooks/useMyBusiness';
 import { useI18n } from '@/i18n/I18nContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -23,6 +23,7 @@ function DashboardShell() {
     { to: '/dashboard/provider-agenda', label: t('dash.providerAgenda'), icon: CalendarClock },
     { to: '/dashboard/team', label: t('dash.team'), icon: Users },
     { to: '/dashboard/inventory', label: t('dash.inventory'), icon: Boxes },
+    { to: '/dashboard/orders', label: t('dash.orders'), icon: ShoppingBag },
     { to: '/dashboard/business', label: t('dash.myBusiness'), icon: Store },
     { to: '/dashboard/services', label: t('dash.services'), icon: Scissors },
     { to: '/dashboard/photos', label: t('dash.photos'), icon: Image },

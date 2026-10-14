@@ -45,7 +45,8 @@ public class SecurityConfig {
                         "/api/businesses/*/hours",
                         "/api/businesses/*/reviews",
                         "/api/businesses/*/availability",
-                        "/api/businesses/*/public-providers").permitAll()
+                        "/api/businesses/*/public-providers",
+                        "/api/businesses/*/products").permitAll()
                 .requestMatchers("/actuator/health", "/h2-console/**", "/error").permitAll()
                 // Everything else needs authentication
                 .anyRequest().authenticated())

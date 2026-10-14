@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { BusinessPage } from './pages/BusinessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyBookingsPage } from './pages/MyBookingsPage';
+import { MyOrdersPage } from './pages/MyOrdersPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AdminPage } from './pages/AdminPage';
@@ -19,6 +20,7 @@ import { DashboardAgenda } from './pages/dashboard/DashboardAgenda';
 import { DashboardProviderAgenda } from './pages/dashboard/DashboardProviderAgenda';
 import { DashboardTeam } from './pages/dashboard/DashboardTeam';
 import { DashboardInventory } from './pages/dashboard/DashboardInventory';
+import { DashboardOrders } from './pages/dashboard/DashboardOrders';
 
 export default function App() {
   return (
@@ -43,6 +45,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <MyBookingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <MyOrdersPage />
             </ProtectedRoute>
           }
         />
@@ -73,6 +83,7 @@ export default function App() {
         <Route path="provider-agenda" element={<DashboardProviderAgenda />} />
         <Route path="team" element={<DashboardTeam />} />
         <Route path="inventory" element={<DashboardInventory />} />
+        <Route path="orders" element={<DashboardOrders />} />
         <Route path="reviews" element={<DashboardReviews />} />
       </Route>
 
